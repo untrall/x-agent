@@ -52,14 +52,35 @@ The universal pass answers *"who is this person"*; the scenario projection answe
         └──── questions / feedback ──┘                               matching
 ```
 
-Matching runs in three steps — hard rules filter first, then directional scoring, then combination:
+Matching runs in three named steps:
 
-```
-s(A→B) = w_no · cover(A.needs, B.offers) + w_v · values + w_t · traits(sim/comp) + w_i · interests
-score  = harmonic_mean( s(A→B), s(B→A) )
-```
+**Step 1 — Hard gates.** Non-negotiables are checked in both directions before any scoring: distance (if either side requires the same city), incompatible stances on children, smoking dealbreakers. One failed gate zeroes the pair — and the rejection carries its reason.
 
-Every trait axis is declared `sim` (closeness scores) or `comp` (complementarity scores) in the scenario config. Pool-wide pairing is the classic two-sided stable-matching problem — see the roadmap.
+**Step 2 — Directional fit.** "She fits him" and "he fits her" are scored separately. Only one component is directional; the rest are symmetric:
+
+$$F(A \to B) = w_n \cdot \mathrm{cover}(A.\mathrm{needs},\, B.\mathrm{offers}) + w_v \cdot V(A,B) + w_t \cdot T(A,B) + w_i \cdot J(A,B)$$
+
+| Component | Meaning | How it is computed | Weight |
+|---|---|---|---|
+| cover | B gives what A is looking for | share of A's `needs` tags present in B's `offers` | 0.45 |
+| V — values | shared priorities | rank-weighted overlap of the two ranked value lists | 0.25 |
+| T — traits | chemistry of dispositions | per axis: `sim` axes score closeness 1−\|a−b\|, `comp` axes score complementarity 1−\|a+b−1\| | 0.20 |
+| J — interests | shared life | Jaccard similarity of interest tags | 0.10 |
+
+**Step 3 — The short board decides (harmonic mean).**
+
+$$\mathrm{score}(A,B) = \frac{2 \cdot F(A \to B) \cdot F(B \to A)}{F(A \to B) + F(B \to A)}$$
+
+A match is only as strong as its less interested side, and the harmonic mean is brutally sensitive to the weaker direction — which is exactly the point. Measured by the engine on the demo pool:
+
+| Pair | She fits him | He fits her | Score |
+|---|---|---|---|
+| 阿哲 × 林小满 | 0.935 | 0.935 | **0.935** |
+| 阿哲 × 苏晴 | 0.407 | 0.632 | 0.495 |
+
+苏晴 looks near-perfect on paper — values 0.90, traits 0.909 — but she covers **0%** of what 阿哲 actually needs, so the harmonic mean sinks her to third. Similarity is not compatibility; this engine proves it, with numbers.
+
+Pool-wide pairing (everyone matched at once) is the classic two-sided stable-matching problem — see the roadmap.
 
 ## Quick Start
 
@@ -167,14 +188,35 @@ X-Agent 是一个**智能体池匹配网络**。每个人身边都有越来越�
 
 算子分解：`画像_场景 = Project_场景( Distill_通用(原始材料) )`。通用蒸馏回答"这个人是谁"，场景投影回答"在这个场景里，该看他的什么"。同一句"我经常熬夜赶项目"：婚恋投影读出*作息不规律*，创业投影读出*执行力强*。
 
-匹配三步：硬约束过滤 → 双向打分 → 调和平均合并：
+匹配分三步，每一步都有名字：
 
-```
-s(A→B) = w_no · cover(A 的需求, B 的供给) + w_v · 价值观 + w_t · 特质(sim/comp) + w_i · 兴趣
-score  = harmonic_mean( s(A→B), s(B→A) )
-```
+**第一步 · 硬门（Hard Gates）** — 先谈不能谈的。异地（任一方要求同城）、生育观冲突、吸烟 dealbreaker，双向检查；任何一条不过，分数直接归零，淘汰附理由。
 
-每条特质轴在场景配置里标注 `sim`（求同）或 `comp`（互补）。池级全局配对是经典的**双边稳定匹配问题**（Gale–Shapley），见路线图。
+**第二步 · 双向契合（Directional Fit）** — 「她合他」和「他合她」是两个分数。其中只有需求覆盖是方向性的，其余分量对称：
+
+$$F(A \to B) = w_n \cdot \mathrm{cover}(A.\mathrm{needs},\, B.\mathrm{offers}) + w_v \cdot V(A,B) + w_t \cdot T(A,B) + w_i \cdot J(A,B)$$
+
+| 分量 | 含义 | 怎么算 | 权重 |
+|---|---|---|---|
+| 需求覆盖 cover | B 能给的，正是 A 在找的 | A 的 needs 标签被 B 的 offers 命中的比例 | 0.45 |
+| 价值观 V | 看重的东西是否一致 | 两份排序列表的加权重叠（越靠前权重越大） | 0.25 |
+| 特质 T | 脾性是否合拍 | 逐轴算：sim 轴取接近度 1−\|a−b\|，comp 轴取互补度 1−\|a+b−1\| | 0.20 |
+| 兴趣 J | 生活是否同频 | 兴趣标签的 Jaccard 相似度 | 0.10 |
+
+**第三步 · 短板合并（Harmonic Mean）** — 匹配的高度，由更不满意的一方决定：
+
+$$\mathrm{score}(A,B) = \frac{2 \cdot F(A \to B) \cdot F(B \to A)}{F(A \to B) + F(B \to A)}$$
+
+调和平均对短板极度敏感，这正是我们要的。引擎实测：
+
+| 配对 | 她合他 | 他合她 | 最终分 |
+|---|---|---|---|
+| 阿哲 × 林小满 | 0.935 | 0.935 | **0.935** |
+| 阿哲 × 苏晴 | 0.407 | 0.632 | 0.495 |
+
+苏晴纸面几乎满分（价值观 0.90、特质 0.909），但她对阿哲核心需求的覆盖是 **0** — 调和平均直接把他俩这对沉到第 3。像，不等于合；这套算法能用数字证明这一点。
+
+池级全局配对（全场同时配对）是经典的**双边稳定匹配问题**（Gale–Shapley），见路线图。
 
 ### 快速开始
 
