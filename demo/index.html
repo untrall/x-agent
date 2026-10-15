@@ -390,7 +390,8 @@ $("#btnAuto").onclick = async () => {
 };
 
 fetch("demo_data.json").then(r => { if(!r.ok) throw new Error("bad"); return r.json(); })
-  .then(data => { D = data; heroId = D.protagonist.id; resize(); buildScene(); requestAnimationFrame(frame); })
+  .then(data => { D = data; heroId = D.protagonist.id; resize(); buildScene(); requestAnimationFrame(frame);
+    if(new URLSearchParams(location.search).has("auto")) setTimeout(() => $("#btnAuto").click(), 700); })
   .catch(() => { $("#err").style.display = "grid"; });
 resize();
 </script>
