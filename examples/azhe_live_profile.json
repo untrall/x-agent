@@ -1,0 +1,52 @@
+{
+  "id": "azhe",
+  "name": "阿哲",
+  "gender": "M",
+  "age": 29,
+  "city": "上海",
+  "job": "AI推理工程师",
+  "facts": {
+    "wants_kids": "open",
+    "smoker": false,
+    "require_same_city": true,
+    "dealbreaker_smoking": true
+  },
+  "values": [
+    "事业",
+    "稳定",
+    "成长",
+    "健康",
+    "诚实"
+  ],
+  "traits": {
+    "extroversion": 0.2,
+    "expressiveness": 0.2,
+    "planning": 0.9,
+    "independence": 0.8,
+    "romanticism": 0.2,
+    "domesticity": 0.7
+  },
+  "needs": [
+    "情绪稳定",
+    "深度交流",
+    "共同成长",
+    "空间感",
+    "倾听"
+  ],
+  "offers": [
+    "情绪稳定",
+    "上进心",
+    "居家温馨",
+    "陪伴",
+    "倾听",
+    "空间感"
+  ],
+  "interests": [
+    "跑步",
+    "做饭",
+    "科幻",
+    "技术"
+  ],
+  "essence": "目标感强、行动多于言语的AI工程师，渴望能深聊、情绪稳定、一起成长的关系。",
+  "confidence": 0.9
+}

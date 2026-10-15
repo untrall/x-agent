@@ -107,6 +107,8 @@ python3 scripts/distill_persona.py \
   --out /tmp/azhe.json
 ```
 
+> **Verified live (2026-10-15):** a real end-to-end run against the Semantix gateway (`glm-5.2`) is captured in [examples/azhe_live_profile.json](examples/azhe_live_profile.json) and evaluated in [docs/live-distillation.md](docs/live-distillation.md) — hard facts 5/5, needs 4/4, and one honest surprise: re-ranked with the live profile, the match winner changes. Reproduce with `python3 scripts/eval_distillation.py`.
+
 ## Repository Layout
 
 ```
@@ -228,6 +230,8 @@ cd demo && python3 -m http.server 8000    # 打开 http://localhost:8000，点�
 ```
 
 真实蒸馏接任意 OpenAI 兼容端点（黑客松的 Semantix 额度即可）：设置 `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` 三个环境变量后运行 `scripts/distill_persona.py`（参数见英文版 Quick Start）。
+
+> **已实跑验证（2026-10-15）**：用 Semantix 网关（glm-5.2）真实蒸馏出的画像存放在 [examples/azhe_live_profile.json](examples/azhe_live_profile.json)，完整评测见 [docs/live-distillation.md](docs/live-distillation.md)——硬事实 5/5、需求命中 4/4，外加一个诚实的发现：换上真画像重排，匹配冠军变了。用 `python3 scripts/eval_distillation.py` 可复现。
 
 ### 演示讲稿（2–3 分钟）
 
