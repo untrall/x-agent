@@ -1,0 +1,1104 @@
+{
+  "scenario": "dating",
+  "protagonist": {
+    "id": "azhe",
+    "name": "阿哲",
+    "age": 29,
+    "city": "上海",
+    "job": "AI 工程师",
+    "essence": "在上海做 AI 推理的工程师，慢热但认定了就稳定，想找一个能深聊、能一起成长的人。",
+    "values": [
+      "成长",
+      "诚实",
+      "家庭",
+      "体验"
+    ],
+    "needs": [
+      "深度交流",
+      "倾听",
+      "情绪稳定",
+      "共同成长"
+    ],
+    "offers": [
+      "经济独立",
+      "上进心",
+      "居家温馨",
+      "幽默感"
+    ],
+    "interests": [
+      "跑步",
+      "科幻片",
+      "做饭",
+      "桌游"
+    ]
+  },
+  "protagonist_traits": {
+    "domesticity": 0.6,
+    "expressiveness": 0.3,
+    "extroversion": 0.35,
+    "independence": 0.75,
+    "planning": 0.8,
+    "romanticism": 0.55
+  },
+  "axes": [
+    {
+      "key": "extroversion",
+      "label": "外向程度",
+      "mode": "comp"
+    },
+    {
+      "key": "expressiveness",
+      "label": "表达欲",
+      "mode": "comp"
+    },
+    {
+      "key": "planning",
+      "label": "计划性",
+      "mode": "sim"
+    },
+    {
+      "key": "independence",
+      "label": "独立性",
+      "mode": "sim"
+    },
+    {
+      "key": "romanticism",
+      "label": "浪漫倾向",
+      "mode": "sim"
+    },
+    {
+      "key": "domesticity",
+      "label": "居家倾向",
+      "mode": "sim"
+    }
+  ],
+  "sources": [
+    {
+      "name": "日常助手 Agent",
+      "desc": "生活记忆 · 作息、习惯、朋友评价"
+    },
+    {
+      "name": "工作 Agent",
+      "desc": "职业记忆 · 目标感、计划性、财务自律"
+    },
+    {
+      "name": "情感咨询 Agent",
+      "desc": "自述 · 想要的关系、分手复盘"
+    }
+  ],
+  "qa_beats": [
+    {
+      "q": "如果吵架了，你希望怎么处理？",
+      "a": "别冷战，有事当天聊开——我最怕猜来猜去。",
+      "updates": [
+        {
+          "label": "表达欲（新证据并入）",
+          "from": 0.3,
+          "to": 0.36
+        },
+        {
+          "label": "「深度交流」置信度",
+          "from": 0.86,
+          "to": 0.93
+        }
+      ]
+    },
+    {
+      "q": "理想的周末是什么样？",
+      "a": "睡到自然醒，一起买菜做饭，晚上看一部科幻片。",
+      "updates": [
+        {
+          "label": "居家倾向（新证据并入）",
+          "from": 0.6,
+          "to": 0.67
+        }
+      ]
+    }
+  ],
+  "pool": [
+    {
+      "id": "xiaoman",
+      "name": "林小满",
+      "x": 0.754,
+      "y": 0.65,
+      "z": 0.53
+    },
+    {
+      "id": "yutong",
+      "name": "陈语桐",
+      "x": 0.739,
+      "y": 0.773,
+      "z": 0.79
+    },
+    {
+      "id": "suqing",
+      "name": "苏晴",
+      "x": 0.451,
+      "y": 0.761,
+      "z": 0.62
+    },
+    {
+      "id": "jianing",
+      "name": "何佳宁",
+      "x": 0.391,
+      "y": 0.764,
+      "z": 0.68
+    },
+    {
+      "id": "zijin",
+      "name": "高子衿",
+      "x": 0.252,
+      "y": 0.687,
+      "z": 0.77
+    },
+    {
+      "id": "tangguo",
+      "name": "唐果",
+      "x": 0.169,
+      "y": 0.515,
+      "z": 0.73
+    },
+    {
+      "id": "yizhou",
+      "name": "沈亦舟",
+      "x": 0.26,
+      "y": 0.378,
+      "z": 0.87
+    },
+    {
+      "id": "luman",
+      "name": "陆蔓",
+      "x": 0.351,
+      "y": 0.275,
+      "z": 0.45
+    },
+    {
+      "id": "jiangxue",
+      "name": "江雪",
+      "x": 0.563,
+      "y": 0.254,
+      "z": 0.41
+    },
+    {
+      "id": "fangtang",
+      "name": "方糖",
+      "x": 0.648,
+      "y": 0.215,
+      "z": 0.74
+    },
+    {
+      "id": "guwan",
+      "name": "顾晚",
+      "x": 0.87,
+      "y": 0.398,
+      "z": 0.7
+    },
+    {
+      "id": "luoyi",
+      "name": "罗一",
+      "x": 0.847,
+      "y": 0.572,
+      "z": 0.71
+    }
+  ],
+  "rankings": {
+    "default": [
+      {
+        "candidate_id": "xiaoman",
+        "score": 0.935,
+        "score_a_to_b": 0.935,
+        "score_b_to_a": 0.935,
+        "passed": true,
+        "failed_rules": [],
+        "breakdown": {
+          "needs_covered_by_candidate": 1.0,
+          "needs_covered_by_protagonist": 1.0,
+          "values": 1.0,
+          "traits": 0.873,
+          "interests": 0.6
+        },
+        "reasons": [
+          "林小满能给你：深度交流、倾听、情绪稳定、共同成长",
+          "你能给林小满：经济独立、上进心、居家温馨、幽默感",
+          "共同看重：成长、诚实、家庭",
+          "表达欲恰好互补（0.30 / 0.75）",
+          "共同爱好：科幻片、做饭、桌游"
+        ],
+        "candidate": {
+          "id": "xiaoman",
+          "name": "林小满",
+          "age": 27,
+          "city": "上海",
+          "job": "产品经理",
+          "essence": "目标感很强的产品经理，表达直接、情绪稳定，理想关系是两个人并肩往前走。",
+          "traits": {
+            "domesticity": 0.65,
+            "expressiveness": 0.75,
+            "extroversion": 0.4,
+            "independence": 0.6,
+            "planning": 0.7,
+            "romanticism": 0.7
+          }
+        }
+      },
+      {
+        "candidate_id": "yutong",
+        "score": 0.59,
+        "score_a_to_b": 0.498,
+        "score_b_to_a": 0.723,
+        "passed": true,
+        "failed_rules": [],
+        "breakdown": {
+          "needs_covered_by_candidate": 0.25,
+          "needs_covered_by_protagonist": 0.75,
+          "values": 0.8,
+          "traits": 0.856,
+          "interests": 0.143
+        },
+        "reasons": [
+          "陈语桐能给你：深度交流",
+          "你能给陈语桐：上进心、幽默感、经济独立",
+          "共同看重：成长、诚实、体验",
+          "表达欲恰好互补（0.30 / 0.70）",
+          "共同爱好：跑步"
+        ],
+        "candidate": {
+          "id": "yutong",
+          "name": "陈语桐",
+          "age": 28,
+          "city": "上海",
+          "job": "设计师",
+          "essence": "热爱生活的视觉设计师，朋友很多、精力旺盛，想找一个能陪她疯也欣赏她野心的人。",
+          "traits": {
+            "domesticity": 0.35,
+            "expressiveness": 0.7,
+            "extroversion": 0.75,
+            "independence": 0.8,
+            "planning": 0.45,
+            "romanticism": 0.6
+          }
+        }
+      },
+      {
+        "candidate_id": "suqing",
+        "score": 0.495,
+        "score_a_to_b": 0.407,
+        "score_b_to_a": 0.632,
+        "passed": true,
+        "failed_rules": [],
+        "breakdown": {
+          "needs_covered_by_candidate": 0.0,
+          "needs_covered_by_protagonist": 0.5,
+          "values": 0.9,
+          "traits": 0.909,
+          "interests": 0.0
+        },
+        "reasons": [
+          "你能给苏晴：经济独立、上进心",
+          "共同看重：成长、诚实、家庭",
+          "居家倾向很合拍（0.60 / 0.60）"
+        ],
+        "candidate": {
+          "id": "suqing",
+          "name": "苏晴",
+          "age": 29,
+          "city": "上海",
+          "job": "咨询顾问",
+          "essence": "条理分明的咨询顾问，纸面上和阿哲几乎是同类人，但她给的并不是他真正想要的。",
+          "traits": {
+            "domesticity": 0.6,
+            "expressiveness": 0.45,
+            "extroversion": 0.5,
+            "independence": 0.7,
+            "planning": 0.85,
+            "romanticism": 0.5
+          }
+        }
+      },
+      {
+        "candidate_id": "jiangxue",
+        "score": 0.468,
+        "score_a_to_b": 0.691,
+        "score_b_to_a": 0.354,
+        "passed": true,
+        "failed_rules": [],
+        "breakdown": {
+          "needs_covered_by_candidate": 0.75,
+          "needs_covered_by_protagonist": 0.0,
+          "values": 0.75,
+          "traits": 0.831,
+          "interests": 0.0
+        },
+        "reasons": [
+          "江雪能给你：深度交流、倾听、共同成长",
+          "共同看重：成长、诚实、体验",
+          "计划性很合拍（0.80 / 0.75）"
+        ],
+        "candidate": {
+          "id": "jiangxue",
+          "name": "江雪",
+          "age": 27,
+          "city": "上海",
+          "job": "高校研究员",
+          "essence": "安静专注的研究员，能给阿哲想要的一切，但她想要的阿哲几乎都给不了——典型的单向匹配。",
+          "traits": {
+            "domesticity": 0.5,
+            "expressiveness": 0.45,
+            "extroversion": 0.3,
+            "independence": 0.85,
+            "planning": 0.75,
+            "romanticism": 0.4
+          }
+        }
+      },
+      {
+        "candidate_id": "fangtang",
+        "score": 0.462,
+        "score_a_to_b": 0.413,
+        "score_b_to_a": 0.525,
+        "passed": true,
+        "failed_rules": [],
+        "breakdown": {
+          "needs_covered_by_candidate": 0.25,
+          "needs_covered_by_protagonist": 0.5,
+          "values": 0.5,
+          "traits": 0.876,
+          "interests": 0.0
+        },
+        "reasons": [
+          "方糖能给你：共同成长",
+          "你能给方糖：幽默感、经济独立",
+          "共同看重：家庭、体验",
+          "外向程度恰好互补（0.35 / 0.65）"
+        ],
+        "candidate": {
+          "id": "fangtang",
+          "name": "方糖",
+          "age": 26,
+          "city": "上海",
+          "job": "电商运营",
+          "essence": "亲和力强的电商运营，各方面都还不错，但没有哪一项特别戳中阿哲。",
+          "traits": {
+            "domesticity": 0.55,
+            "expressiveness": 0.6,
+            "extroversion": 0.65,
+            "independence": 0.55,
+            "planning": 0.5,
+            "romanticism": 0.65
+          }
+        }
+      },
+      {
+        "candidate_id": "jianing",
+        "score": 0.417,
+        "score_a_to_b": 0.417,
+        "score_b_to_a": 0.417,
+        "passed": true,
+        "failed_rules": [],
+        "breakdown": {
+          "needs_covered_by_candidate": 0.25,
+          "needs_covered_by_protagonist": 0.25,
+          "values": 0.55,
+          "traits": 0.837,
+          "interests": 0.0
+        },
+        "reasons": [
+          "何佳宁能给你：倾听",
+          "你能给何佳宁：经济独立",
+          "共同看重：诚实、家庭",
+          "浪漫倾向很合拍（0.55 / 0.50）"
+        ],
+        "candidate": {
+          "id": "jianing",
+          "name": "何佳宁",
+          "age": 26,
+          "city": "上海",
+          "job": "小学教师",
+          "essence": "温和踏实的小学老师，期待稳定的家庭生活，日常的幸福感比远方更重要。",
+          "traits": {
+            "domesticity": 0.85,
+            "expressiveness": 0.5,
+            "extroversion": 0.55,
+            "independence": 0.5,
+            "planning": 0.65,
+            "romanticism": 0.5
+          }
+        }
+      },
+      {
+        "candidate_id": "guwan",
+        "score": 0.402,
+        "score_a_to_b": 0.353,
+        "score_b_to_a": 0.466,
+        "passed": true,
+        "failed_rules": [],
+        "breakdown": {
+          "needs_covered_by_candidate": 0.25,
+          "needs_covered_by_protagonist": 0.5,
+          "values": 0.25,
+          "traits": 0.892,
+          "interests": 0.0
+        },
+        "reasons": [
+          "顾晚能给你：情绪稳定",
+          "你能给顾晚：经济独立、上进心",
+          "共同看重：诚实",
+          "计划性很合拍（0.80 / 0.85）"
+        ],
+        "candidate": {
+          "id": "guwan",
+          "name": "顾晚",
+          "age": 31,
+          "city": "上海",
+          "job": "律师",
+          "essence": "干练理性的律师，希望对方情绪稳定、经济独立，浪漫在她的排序里比较靠后。",
+          "traits": {
+            "domesticity": 0.45,
+            "expressiveness": 0.6,
+            "extroversion": 0.55,
+            "independence": 0.8,
+            "planning": 0.85,
+            "romanticism": 0.35
+          }
+        }
+      },
+      {
+        "candidate_id": "zijin",
+        "score": 0.323,
+        "score_a_to_b": 0.246,
+        "score_b_to_a": 0.471,
+        "passed": true,
+        "failed_rules": [],
+        "breakdown": {
+          "needs_covered_by_candidate": 0.0,
+          "needs_covered_by_protagonist": 0.5,
+          "values": 0.3,
+          "traits": 0.853,
+          "interests": 0.0
+        },
+        "reasons": [
+          "你能给高子衿：上进心、经济独立",
+          "共同看重：成长",
+          "外向程度恰好互补（0.35 / 0.60）"
+        ],
+        "candidate": {
+          "id": "zijin",
+          "name": "高子衿",
+          "age": 30,
+          "city": "上海",
+          "job": "金融分析师",
+          "essence": "高强度高自驱的金融分析师，边界感极强，欣赏同样野心勃勃、互不打扰的伴侣。",
+          "traits": {
+            "domesticity": 0.3,
+            "expressiveness": 0.65,
+            "extroversion": 0.6,
+            "independence": 0.9,
+            "planning": 0.9,
+            "romanticism": 0.3
+          }
+        }
+      },
+      {
+        "candidate_id": "tangguo",
+        "score": 0.311,
+        "score_a_to_b": 0.265,
+        "score_b_to_a": 0.377,
+        "passed": true,
+        "failed_rules": [],
+        "breakdown": {
+          "needs_covered_by_candidate": 0.0,
+          "needs_covered_by_protagonist": 0.25,
+          "values": 0.5,
+          "traits": 0.699,
+          "interests": 0.0
+        },
+        "reasons": [
+          "你能给唐果：幽默感",
+          "共同看重：成长、体验"
+        ],
+        "candidate": {
+          "id": "tangguo",
+          "name": "唐果",
+          "age": 25,
+          "city": "上海",
+          "job": "新媒体运营",
+          "essence": "永远在找新乐子的新媒体运营，快乐传染力一流，但深度对话不是她的舒适区。",
+          "traits": {
+            "domesticity": 0.25,
+            "expressiveness": 0.9,
+            "extroversion": 0.9,
+            "independence": 0.55,
+            "planning": 0.3,
+            "romanticism": 0.8
+          }
+        }
+      },
+      {
+        "candidate_id": "luoyi",
+        "score": 0.272,
+        "score_a_to_b": 0.272,
+        "score_b_to_a": 0.272,
+        "passed": true,
+        "failed_rules": [],
+        "breakdown": {
+          "needs_covered_by_candidate": 0.0,
+          "needs_covered_by_protagonist": 0.0,
+          "values": 0.5,
+          "traits": 0.736,
+          "interests": 0.0
+        },
+        "reasons": [
+          "共同看重：成长、体验",
+          "独立性很合拍（0.75 / 0.70）"
+        ],
+        "candidate": {
+          "id": "luoyi",
+          "name": "罗一",
+          "age": 28,
+          "city": "上海",
+          "job": "插画师",
+          "essence": "慢节奏的自由插画师，作息随灵感走，和计划性极强的阿哲在生活节奏上南辕北辙。",
+          "traits": {
+            "domesticity": 0.7,
+            "expressiveness": 0.4,
+            "extroversion": 0.35,
+            "independence": 0.7,
+            "planning": 0.25,
+            "romanticism": 0.75
+          }
+        }
+      },
+      {
+        "candidate_id": "yizhou",
+        "score": 0.0,
+        "score_a_to_b": 0.985,
+        "score_b_to_a": 0.985,
+        "passed": false,
+        "failed_rules": [
+          "异地：阿哲在上海、沈亦舟在北京，而一方要求同城"
+        ],
+        "breakdown": {
+          "needs_covered_by_candidate": 1.0,
+          "needs_covered_by_protagonist": 1.0,
+          "values": 1.0,
+          "traits": 0.923,
+          "interests": 1.0
+        },
+        "reasons": [
+          "异地：阿哲在上海、沈亦舟在北京，而一方要求同城"
+        ],
+        "candidate": {
+          "id": "yizhou",
+          "name": "沈亦舟",
+          "age": 28,
+          "city": "北京",
+          "job": "人力资源",
+          "essence": "纸面条件近乎满分的候选人——唯一的硬伤是她在北京，而阿哲只考虑同城。",
+          "traits": {
+            "domesticity": 0.6,
+            "expressiveness": 0.7,
+            "extroversion": 0.45,
+            "independence": 0.65,
+            "planning": 0.75,
+            "romanticism": 0.65
+          }
+        }
+      },
+      {
+        "candidate_id": "luman",
+        "score": 0.0,
+        "score_a_to_b": 0.484,
+        "score_b_to_a": 0.409,
+        "passed": false,
+        "failed_rules": [
+          "陆蔓吸烟，触发阿哲的 dealbreaker"
+        ],
+        "breakdown": {
+          "needs_covered_by_candidate": 0.5,
+          "needs_covered_by_protagonist": 0.333,
+          "values": 0.35,
+          "traits": 0.858,
+          "interests": 0.0
+        },
+        "reasons": [
+          "陆蔓吸烟，触发阿哲的 dealbreaker"
+        ],
+        "candidate": {
+          "id": "luman",
+          "name": "陆蔓",
+          "age": 29,
+          "city": "上海",
+          "job": "外科医生",
+          "essence": "雷厉风行的外科医生，工作强度极大、明确丁克，压力大时抽烟——正好撞上阿哲的 dealbreaker。",
+          "traits": {
+            "domesticity": 0.4,
+            "expressiveness": 0.55,
+            "extroversion": 0.5,
+            "independence": 0.85,
+            "planning": 0.7,
+            "romanticism": 0.4
+          }
+        }
+      }
+    ],
+    "after_feedback": [
+      {
+        "candidate_id": "yutong",
+        "score": 0.59,
+        "score_a_to_b": 0.498,
+        "score_b_to_a": 0.723,
+        "passed": true,
+        "failed_rules": [],
+        "breakdown": {
+          "needs_covered_by_candidate": 0.25,
+          "needs_covered_by_protagonist": 0.75,
+          "values": 0.8,
+          "traits": 0.856,
+          "interests": 0.143
+        },
+        "reasons": [
+          "陈语桐能给你：深度交流",
+          "你能给陈语桐：上进心、幽默感、经济独立",
+          "共同看重：成长、诚实、体验",
+          "表达欲恰好互补（0.30 / 0.70）",
+          "共同爱好：跑步"
+        ],
+        "candidate": {
+          "id": "yutong",
+          "name": "陈语桐",
+          "age": 28,
+          "city": "上海",
+          "job": "设计师",
+          "essence": "热爱生活的视觉设计师，朋友很多、精力旺盛，想找一个能陪她疯也欣赏她野心的人。",
+          "traits": {
+            "domesticity": 0.35,
+            "expressiveness": 0.7,
+            "extroversion": 0.75,
+            "independence": 0.8,
+            "planning": 0.45,
+            "romanticism": 0.6
+          }
+        }
+      },
+      {
+        "candidate_id": "fangtang",
+        "score": 0.462,
+        "score_a_to_b": 0.413,
+        "score_b_to_a": 0.525,
+        "passed": true,
+        "failed_rules": [],
+        "breakdown": {
+          "needs_covered_by_candidate": 0.25,
+          "needs_covered_by_protagonist": 0.5,
+          "values": 0.5,
+          "traits": 0.876,
+          "interests": 0.0
+        },
+        "reasons": [
+          "方糖能给你：共同成长",
+          "你能给方糖：幽默感、经济独立",
+          "共同看重：家庭、体验",
+          "外向程度恰好互补（0.35 / 0.65）"
+        ],
+        "candidate": {
+          "id": "fangtang",
+          "name": "方糖",
+          "age": 26,
+          "city": "上海",
+          "job": "电商运营",
+          "essence": "亲和力强的电商运营，各方面都还不错，但没有哪一项特别戳中阿哲。",
+          "traits": {
+            "domesticity": 0.55,
+            "expressiveness": 0.6,
+            "extroversion": 0.65,
+            "independence": 0.55,
+            "planning": 0.5,
+            "romanticism": 0.65
+          }
+        }
+      },
+      {
+        "candidate_id": "xiaoman",
+        "score": 0.421,
+        "score_a_to_b": 0.935,
+        "score_b_to_a": 0.935,
+        "passed": true,
+        "failed_rules": [],
+        "breakdown": {
+          "needs_covered_by_candidate": 1.0,
+          "needs_covered_by_protagonist": 1.0,
+          "values": 1.0,
+          "traits": 0.873,
+          "interests": 0.6
+        },
+        "reasons": [
+          "林小满能给你：深度交流、倾听、情绪稳定、共同成长",
+          "你能给林小满：经济独立、上进心、居家温馨、幽默感",
+          "共同看重：成长、诚实、家庭",
+          "表达欲恰好互补（0.30 / 0.75）",
+          "共同爱好：科幻片、做饭、桌游"
+        ],
+        "candidate": {
+          "id": "xiaoman",
+          "name": "林小满",
+          "age": 27,
+          "city": "上海",
+          "job": "产品经理",
+          "essence": "目标感很强的产品经理，表达直接、情绪稳定，理想关系是两个人并肩往前走。",
+          "traits": {
+            "domesticity": 0.65,
+            "expressiveness": 0.75,
+            "extroversion": 0.4,
+            "independence": 0.6,
+            "planning": 0.7,
+            "romanticism": 0.7
+          }
+        },
+        "demoted_by_feedback": [
+          "extroversion"
+        ]
+      },
+      {
+        "candidate_id": "jianing",
+        "score": 0.417,
+        "score_a_to_b": 0.417,
+        "score_b_to_a": 0.417,
+        "passed": true,
+        "failed_rules": [],
+        "breakdown": {
+          "needs_covered_by_candidate": 0.25,
+          "needs_covered_by_protagonist": 0.25,
+          "values": 0.55,
+          "traits": 0.837,
+          "interests": 0.0
+        },
+        "reasons": [
+          "何佳宁能给你：倾听",
+          "你能给何佳宁：经济独立",
+          "共同看重：诚实、家庭",
+          "浪漫倾向很合拍（0.55 / 0.50）"
+        ],
+        "candidate": {
+          "id": "jianing",
+          "name": "何佳宁",
+          "age": 26,
+          "city": "上海",
+          "job": "小学教师",
+          "essence": "温和踏实的小学老师，期待稳定的家庭生活，日常的幸福感比远方更重要。",
+          "traits": {
+            "domesticity": 0.85,
+            "expressiveness": 0.5,
+            "extroversion": 0.55,
+            "independence": 0.5,
+            "planning": 0.65,
+            "romanticism": 0.5
+          }
+        }
+      },
+      {
+        "candidate_id": "guwan",
+        "score": 0.402,
+        "score_a_to_b": 0.353,
+        "score_b_to_a": 0.466,
+        "passed": true,
+        "failed_rules": [],
+        "breakdown": {
+          "needs_covered_by_candidate": 0.25,
+          "needs_covered_by_protagonist": 0.5,
+          "values": 0.25,
+          "traits": 0.892,
+          "interests": 0.0
+        },
+        "reasons": [
+          "顾晚能给你：情绪稳定",
+          "你能给顾晚：经济独立、上进心",
+          "共同看重：诚实",
+          "计划性很合拍（0.80 / 0.85）"
+        ],
+        "candidate": {
+          "id": "guwan",
+          "name": "顾晚",
+          "age": 31,
+          "city": "上海",
+          "job": "律师",
+          "essence": "干练理性的律师，希望对方情绪稳定、经济独立，浪漫在她的排序里比较靠后。",
+          "traits": {
+            "domesticity": 0.45,
+            "expressiveness": 0.6,
+            "extroversion": 0.55,
+            "independence": 0.8,
+            "planning": 0.85,
+            "romanticism": 0.35
+          }
+        }
+      },
+      {
+        "candidate_id": "zijin",
+        "score": 0.323,
+        "score_a_to_b": 0.246,
+        "score_b_to_a": 0.471,
+        "passed": true,
+        "failed_rules": [],
+        "breakdown": {
+          "needs_covered_by_candidate": 0.0,
+          "needs_covered_by_protagonist": 0.5,
+          "values": 0.3,
+          "traits": 0.853,
+          "interests": 0.0
+        },
+        "reasons": [
+          "你能给高子衿：上进心、经济独立",
+          "共同看重：成长",
+          "外向程度恰好互补（0.35 / 0.60）"
+        ],
+        "candidate": {
+          "id": "zijin",
+          "name": "高子衿",
+          "age": 30,
+          "city": "上海",
+          "job": "金融分析师",
+          "essence": "高强度高自驱的金融分析师，边界感极强，欣赏同样野心勃勃、互不打扰的伴侣。",
+          "traits": {
+            "domesticity": 0.3,
+            "expressiveness": 0.65,
+            "extroversion": 0.6,
+            "independence": 0.9,
+            "planning": 0.9,
+            "romanticism": 0.3
+          }
+        }
+      },
+      {
+        "candidate_id": "tangguo",
+        "score": 0.311,
+        "score_a_to_b": 0.265,
+        "score_b_to_a": 0.377,
+        "passed": true,
+        "failed_rules": [],
+        "breakdown": {
+          "needs_covered_by_candidate": 0.0,
+          "needs_covered_by_protagonist": 0.25,
+          "values": 0.5,
+          "traits": 0.699,
+          "interests": 0.0
+        },
+        "reasons": [
+          "你能给唐果：幽默感",
+          "共同看重：成长、体验"
+        ],
+        "candidate": {
+          "id": "tangguo",
+          "name": "唐果",
+          "age": 25,
+          "city": "上海",
+          "job": "新媒体运营",
+          "essence": "永远在找新乐子的新媒体运营，快乐传染力一流，但深度对话不是她的舒适区。",
+          "traits": {
+            "domesticity": 0.25,
+            "expressiveness": 0.9,
+            "extroversion": 0.9,
+            "independence": 0.55,
+            "planning": 0.3,
+            "romanticism": 0.8
+          }
+        }
+      },
+      {
+        "candidate_id": "suqing",
+        "score": 0.223,
+        "score_a_to_b": 0.407,
+        "score_b_to_a": 0.632,
+        "passed": true,
+        "failed_rules": [],
+        "breakdown": {
+          "needs_covered_by_candidate": 0.0,
+          "needs_covered_by_protagonist": 0.5,
+          "values": 0.9,
+          "traits": 0.909,
+          "interests": 0.0
+        },
+        "reasons": [
+          "你能给苏晴：经济独立、上进心",
+          "共同看重：成长、诚实、家庭",
+          "居家倾向很合拍（0.60 / 0.60）"
+        ],
+        "candidate": {
+          "id": "suqing",
+          "name": "苏晴",
+          "age": 29,
+          "city": "上海",
+          "job": "咨询顾问",
+          "essence": "条理分明的咨询顾问，纸面上和阿哲几乎是同类人，但她给的并不是他真正想要的。",
+          "traits": {
+            "domesticity": 0.6,
+            "expressiveness": 0.45,
+            "extroversion": 0.5,
+            "independence": 0.7,
+            "planning": 0.85,
+            "romanticism": 0.5
+          }
+        },
+        "demoted_by_feedback": [
+          "extroversion"
+        ]
+      },
+      {
+        "candidate_id": "jiangxue",
+        "score": 0.211,
+        "score_a_to_b": 0.691,
+        "score_b_to_a": 0.354,
+        "passed": true,
+        "failed_rules": [],
+        "breakdown": {
+          "needs_covered_by_candidate": 0.75,
+          "needs_covered_by_protagonist": 0.0,
+          "values": 0.75,
+          "traits": 0.831,
+          "interests": 0.0
+        },
+        "reasons": [
+          "江雪能给你：深度交流、倾听、共同成长",
+          "共同看重：成长、诚实、体验",
+          "计划性很合拍（0.80 / 0.75）"
+        ],
+        "candidate": {
+          "id": "jiangxue",
+          "name": "江雪",
+          "age": 27,
+          "city": "上海",
+          "job": "高校研究员",
+          "essence": "安静专注的研究员，能给阿哲想要的一切，但她想要的阿哲几乎都给不了——典型的单向匹配。",
+          "traits": {
+            "domesticity": 0.5,
+            "expressiveness": 0.45,
+            "extroversion": 0.3,
+            "independence": 0.85,
+            "planning": 0.75,
+            "romanticism": 0.4
+          }
+        },
+        "demoted_by_feedback": [
+          "extroversion"
+        ]
+      },
+      {
+        "candidate_id": "luoyi",
+        "score": 0.122,
+        "score_a_to_b": 0.272,
+        "score_b_to_a": 0.272,
+        "passed": true,
+        "failed_rules": [],
+        "breakdown": {
+          "needs_covered_by_candidate": 0.0,
+          "needs_covered_by_protagonist": 0.0,
+          "values": 0.5,
+          "traits": 0.736,
+          "interests": 0.0
+        },
+        "reasons": [
+          "共同看重：成长、体验",
+          "独立性很合拍（0.75 / 0.70）"
+        ],
+        "candidate": {
+          "id": "luoyi",
+          "name": "罗一",
+          "age": 28,
+          "city": "上海",
+          "job": "插画师",
+          "essence": "慢节奏的自由插画师，作息随灵感走，和计划性极强的阿哲在生活节奏上南辕北辙。",
+          "traits": {
+            "domesticity": 0.7,
+            "expressiveness": 0.4,
+            "extroversion": 0.35,
+            "independence": 0.7,
+            "planning": 0.25,
+            "romanticism": 0.75
+          }
+        },
+        "demoted_by_feedback": [
+          "extroversion"
+        ]
+      },
+      {
+        "candidate_id": "yizhou",
+        "score": 0.0,
+        "score_a_to_b": 0.985,
+        "score_b_to_a": 0.985,
+        "passed": false,
+        "failed_rules": [
+          "异地：阿哲在上海、沈亦舟在北京，而一方要求同城"
+        ],
+        "breakdown": {
+          "needs_covered_by_candidate": 1.0,
+          "needs_covered_by_protagonist": 1.0,
+          "values": 1.0,
+          "traits": 0.923,
+          "interests": 1.0
+        },
+        "reasons": [
+          "异地：阿哲在上海、沈亦舟在北京，而一方要求同城"
+        ],
+        "candidate": {
+          "id": "yizhou",
+          "name": "沈亦舟",
+          "age": 28,
+          "city": "北京",
+          "job": "人力资源",
+          "essence": "纸面条件近乎满分的候选人——唯一的硬伤是她在北京，而阿哲只考虑同城。",
+          "traits": {
+            "domesticity": 0.6,
+            "expressiveness": 0.7,
+            "extroversion": 0.45,
+            "independence": 0.65,
+            "planning": 0.75,
+            "romanticism": 0.65
+          }
+        }
+      },
+      {
+        "candidate_id": "luman",
+        "score": 0.0,
+        "score_a_to_b": 0.484,
+        "score_b_to_a": 0.409,
+        "passed": false,
+        "failed_rules": [
+          "陆蔓吸烟，触发阿哲的 dealbreaker"
+        ],
+        "breakdown": {
+          "needs_covered_by_candidate": 0.5,
+          "needs_covered_by_protagonist": 0.333,
+          "values": 0.35,
+          "traits": 0.858,
+          "interests": 0.0
+        },
+        "reasons": [
+          "陆蔓吸烟，触发阿哲的 dealbreaker"
+        ],
+        "candidate": {
+          "id": "luman",
+          "name": "陆蔓",
+          "age": 29,
+          "city": "上海",
+          "job": "外科医生",
+          "essence": "雷厉风行的外科医生，工作强度极大、明确丁克，压力大时抽烟——正好撞上阿哲的 dealbreaker。",
+          "traits": {
+            "domesticity": 0.4,
+            "expressiveness": 0.55,
+            "extroversion": 0.5,
+            "independence": 0.85,
+            "planning": 0.7,
+            "romanticism": 0.4
+          }
+        }
+      }
+    ]
+  },
+  "feedback": {
+    "text": "她太安静了，我希望对方外向一点。",
+    "trait_min": {
+      "extroversion": 0.55
+    },
+    "penalty": 0.45,
+    "note": "反馈没有重掷骰子——它把「外向程度」变成了一道门槛偏好，门槛以下的候选人被显式降权。"
+  }
+}

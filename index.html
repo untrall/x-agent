@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>X-Agent · 智能体池匹配网络</title>
+<style>
+  :root{
+    --bg:#070a12; --panel:#0d1220; --line:#1d2740; --ink:#e8ecf6; --dim:#8b96b5;
+    --gold:#e8b34b; --red:#ff4d5e; --cyan:#57c7ff; --green:#59d9a4;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{background:var(--bg); color:var(--ink); font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif; height:100vh; display:flex; flex-direction:column; overflow:hidden}
+  header{display:flex; align-items:center; gap:18px; padding:12px 20px; border-bottom:1px solid var(--line); flex-wrap:wrap}
+  .logo{font-size:22px; font-weight:800; letter-spacing:.5px}
+  .logo b{color:var(--gold)}
+  .tagline{color:var(--dim); font-size:13px}
+  .controls{margin-left:auto; display:flex; gap:8px; flex-wrap:wrap}
+  button{background:#141c33; color:var(--ink); border:1px solid var(--line); border-radius:999px; padding:7px 14px; font-size:13px; cursor:pointer; transition:.2s}
+  button:hover:not(:disabled){border-color:var(--gold); color:var(--gold)}
+  button:disabled{opacity:.35; cursor:not-allowed}
+  button.primary{background:var(--gold); color:#14100a; font-weight:700; border-color:var(--gold)}
+  main{flex:1; display:flex; min-height:0}
+  .stage{flex:1.9; position:relative; min-width:0}
+  canvas{position:absolute; inset:0; width:100%; height:100%}
+  #stageCaption{position:absolute; left:50%; bottom:18px; transform:translateX(-50%); max-width:86%;
+    background:rgba(10,14,26,.82); border:1px solid var(--line); border-radius:12px; padding:10px 18px;
+    font-size:15px; text-align:center; backdrop-filter:blur(6px); transition:opacity .4s}
+  #stageCaption b{color:var(--gold)}
+  aside{width:400px; border-left:1px solid var(--line); padding:14px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; background:rgba(9,12,22,.6)}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px}
+  .card h3{font-size:13px; color:var(--dim); letter-spacing:2px; margin-bottom:10px; font-weight:600}
+  .placeholder{color:var(--dim); font-size:13px; line-height:1.7}
+  .fade-item{opacity:0; transform:translateY(6px); transition:opacity .5s, transform .5s}
+  .fade-item.in{opacity:1; transform:none}
+  .p-name{font-size:20px; font-weight:800}
+  .p-meta{color:var(--dim); font-size:13px; margin-left:8px}
+  .p-essence{color:#c9d2e8; font-size:13.5px; line-height:1.65; margin:8px 0 4px}
+  .p-sec{margin-top:10px}
+  .p-sec .k{font-size:12px; color:var(--dim); margin-bottom:5px}
+  .chips{display:flex; flex-wrap:wrap; gap:5px}
+  .chip{font-size:12px; padding:3px 9px; border-radius:999px; border:1px solid var(--line); background:#121a2e}
+  .chip.need{border-color:#3a5a8c; color:#a9c8ff}
+  .chip.offer{border-color:#7a5a1e; color:#ffd98a}
+  .chip.flash{animation:flash 1.2s}
+  @keyframes flash{0%{background:#3a2c07}100%{background:#121a2e}}
+  .trait{display:flex; align-items:center; gap:8px; margin:5px 0; font-size:12.5px}
+  .trait .t-name{width:64px; color:#c9d2e8}
+  .trait .t-bar{flex:1; height:6px; background:#182136; border-radius:3px; overflow:hidden}
+  .trait .t-fill{height:100%; background:linear-gradient(90deg,#3f6fd8,var(--cyan)); border-radius:3px; transition:width 1s cubic-bezier(.2,.8,.2,1)}
+  .trait .t-val{width:30px; text-align:right; color:var(--dim)}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .bubble{max-width:92%; padding:8px 12px; border-radius:12px; font-size:13.5px; line-height:1.55; margin:6px 0}
+  .bubble.q{background:#16233f; border:1px solid #24406e}
+  .bubble.a{background:#1d2a1a; border:1px solid #33512c; margin-left:auto}
+  .bubble .who{font-size:11px; color:var(--dim); display:block; margin-bottom:2px}
+  .winner-name{font-size:19px; font-weight:800}
+  .winner-name .score{color:var(--red); margin-left:8px}
+  .demoted{font-size:12px; color:var(--red); border:1px solid #5c2230; background:#2a1116; padding:2px 8px; border-radius:999px; margin-left:6px}
+  .reason{font-size:13.5px; line-height:1.5; padding:5px 0 5px 18px; position:relative; color:#dbe3f4}
+  .reason:before{content:"✓"; position:absolute; left:0; color:var(--green)}
+  .bd-row{display:flex; align-items:center; gap:8px; margin:6px 0; font-size:12.5px}
+  .bd-row .b-name{width:118px; color:#c9d2e8}
+  .bd-row .b-bar{flex:1; height:6px; background:#182136; border-radius:3px; overflow:hidden}
+  .bd-row .b-fill{height:100%; background:linear-gradient(90deg,#8a6a1f,var(--gold)); transition:width 1s}
+  .bd-row .b-val{width:34px; text-align:right; color:var(--dim)}
+  .dirline{font-size:12.5px; color:var(--dim); margin-top:8px; line-height:1.7}
+  .dirline b{color:var(--ink)}
+  .note{font-size:12.5px; color:#ffb3ba; background:#241016; border:1px solid #4a1f28; border-radius:10px; padding:8px 10px; line-height:1.6; margin-top:10px}
+  #err{position:absolute; inset:0; display:none; place-items:center; color:#ffb3ba; font-size:15px; text-align:center; padding:30px; line-height:1.8}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">X<b>-</b>Agent</div>
+  <div class="tagline">你的 agent 已经很懂你了 — X 把这份「懂」，变成一次相遇</div>
+  <div class="controls">
+    <button id="btnAuto" class="primary">▶ 自动演示</button>
+    <button id="btn1">① 接入我的 Agents</button>
+    <button id="btn2" disabled>② 和我聊聊</button>
+    <button id="btn3" disabled>③ 开始匹配</button>
+    <button id="btn4" disabled>④ 反馈：太安静了</button>
+    <button id="btnReset">重置</button>
+  </div>
+</header>
+<main>
+  <section class="stage">
+    <canvas id="cv"></canvas>
+    <div id="err">没能加载 demo_data.json。<br>请先运行 <b>python scripts/build_demo_data.py</b>，<br>再用 <b>python3 -m http.server</b> 打开本页（不要直接双击文件）。</div>
+    <div id="stageCaption">池子里有 <b>12 位候选人</b>。他们的 agent 各自握着关于他们的记忆 — 但原始聊天，永远不会离开他们自己。</div>
+  </section>
+  <aside>
+    <div class="card" id="profileCard">
+      <h3>蒸馏画像 · DISTILLED PROFILE</h3>
+      <div id="profileBody"><div class="placeholder">等待接入阿哲的 agents……<br>接入后，他的三位 agent 会把各自的记忆蒸馏成一张可匹配的画像卡。</div></div>
+    </div>
+    <div class="card" id="chatCard">
+      <h3>X-AGENT 对话 · 活画像</h3>
+      <div id="chatBody"><div class="placeholder">画像不是填一次的表。X-Agent 会追问、会根据新证据更新它。</div></div>
+    </div>
+    <div class="card" id="matchCard">
+      <h3>匹配结果 · TWO-SIDED MATCH</h3>
+      <div id="matchBody"><div class="placeholder">匹配是双向的：她合你、你也得合她。最终分取两个方向的调和平均 — 单相思，沉底。</div></div>
+    </div>
+  </aside>
+</main>
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const cv = $("#cv"), ctx = cv.getContext("2d");
+let W = 0, H = 0, DPR = 1;
+
+function resize(){
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = cv.clientWidth; H = cv.clientHeight;
+  cv.width = W * DPR; cv.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener("resize", resize);
+
+let D = null;                 // demo_data.json
+const nodes = {};             // id -> {x,y,z,name,kind,r,glow}
+let heroId = "azhe";
+const edges = [];             // {to, state, prog, score, passed}
+const pulses = [];            // {from,to,t,speed,color,width}
+let stars = [];
+let phase = 0, animating = false;
+const agentPos = [{x:.14,y:.15},{x:.5,y:.07},{x:.86,y:.15}];
+
+function P(nx, ny){ return [nx * W, ny * H]; }
+
+function buildScene(){
+  stars = Array.from({length:110}, () => ({x:Math.random()*W, y:Math.random()*H, r:Math.random()*1.3+.3, p:Math.random()*6.28}));
+  const hero = D.protagonist;
+  nodes[heroId] = {x:.5, y:.52, z:1, name:hero.name, kind:"hero", r:26};
+  D.pool.forEach(p => { nodes[p.id] = {x:p.x, y:p.y, z:p.z, name:p.name, kind:"cand", r:9 + p.z*8}; });
+  D.sources.forEach((s, i) => { nodes["src"+i] = {x:agentPos[i].x, y:agentPos[i].y, z:.8, name:s.name, kind:"src", r:13, desc:s.desc, alpha:0}; });
+}
+
+function spawnPulse(from, to, color, speed, width){
+  pulses.push({from, to, t:0, speed:speed||0.012, color:color||"#e8b34b", width:width||2});
+}
+
+function drawNode(n, t){
+  const [x, y] = P(n.x, n.y);
+  const a = n.alpha === undefined ? 1 : n.alpha;
+  ctx.save(); ctx.globalAlpha = a;
+  if(n.kind === "hero"){
+    const g = ctx.createRadialGradient(x, y, 2, x, y, n.r*2.4);
+    g.addColorStop(0, "rgba(232,179,75,.5)"); g.addColorStop(1, "rgba(232,179,75,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, n.r*2.4, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#e8b34b"; ctx.beginPath(); ctx.arc(x, y, n.r*.62, 0, 6.29); ctx.fill();
+    ctx.strokeStyle = "rgba(232,179,75,.85)"; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(x, y, n.r, 0, 6.29); ctx.stroke();
+    ctx.fillStyle = "#0a0d16"; ctx.font = "700 13px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("X", x, y+1);
+    ctx.fillStyle = "#f4e3bb"; ctx.font = "600 14px sans-serif";
+    ctx.fillText(n.name + "（你）", x, y + n.r + 16);
+  } else if(n.kind === "src"){
+    ctx.fillStyle = "#16233f"; ctx.strokeStyle = "#3f6fd8"; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.arc(x, y, n.r, 0, 6.29); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#a9c8ff"; ctx.font = "11px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("AI", x, y);
+    ctx.fillStyle = "#8b96b5"; ctx.font = "12px sans-serif";
+    ctx.fillText(n.name, x, y - n.r - 12);
+  } else {
+    const tw = .75 + .25 * Math.sin(t/900 + n.x*20);
+    const g = ctx.createRadialGradient(x, y, 1, x, y, n.r*2.1);
+    g.addColorStop(0, "rgba(140,170,255," + (.34*tw) + ")"); g.addColorStop(1, "rgba(140,170,255,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, n.r*2.1, 0, 6.29); ctx.fill();
+    ctx.fillStyle = "#c9d6ff"; ctx.beginPath(); ctx.arc(x, y, Math.max(2.5, n.r*.32), 0, 6.29); ctx.fill();
+    ctx.fillStyle = "rgba(200,212,240,.85)"; ctx.font = "12px sans-serif"; ctx.textAlign = "center";
+    ctx.fillText(n.name, x, y + n.r + 13);
+  }
+  ctx.restore();
+}
+
+function drawEdge(e, t){
+  const a = nodes[heroId], b = nodes[e.to];
+  if(!a || !b) return;
+  const [x1, y1] = P(a.x, a.y), [x2, y2] = P(b.x, b.y);
+  const ex = x1 + (x2 - x1) * e.prog, ey = y1 + (y2 - y1) * e.prog;
+  ctx.save();
+  if(e.state === "winner"){
+    ctx.strokeStyle = "rgba(255,77,94,.16)"; ctx.lineWidth = 7; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(ex, ey); ctx.stroke();
+    const grad = ctx.createLinearGradient(x1, y1, x2, y2);
+    grad.addColorStop(0, "#e8b34b"); grad.addColorStop(1, "#ff4d5e");
+    ctx.strokeStyle = grad; ctx.lineWidth = 2.6;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(ex, ey); ctx.stroke();
+  } else if(e.state === "rejected"){
+    ctx.strokeStyle = "rgba(255,90,100,.28)"; ctx.lineWidth = 1; ctx.setLineDash([4, 5]);
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(ex, ey); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(255,120,130,.9)"; ctx.font = "13px sans-serif"; ctx.textAlign = "center";
+    ctx.fillText("✕", (x1+x2)/2, (y1+y2)/2 - 6);
+  } else if(e.state === "kept"){
+    ctx.strokeStyle = "rgba(232,179,75,.20)"; ctx.lineWidth = 1.1;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(ex, ey); ctx.stroke();
+  } else { // evaluating
+    ctx.strokeStyle = "rgba(120,180,255,.75)"; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(ex, ey); ctx.stroke();
+  }
+  if(e.score !== null && e.prog >= 1 && e.state !== "idle"){
+    ctx.fillStyle = e.state === "winner" ? "#ffd7da" : "rgba(200,212,240,.75)";
+    ctx.font = (e.state === "winner" ? "700 15px" : "12px") + " sans-serif"; ctx.textAlign = "center";
+    ctx.fillText(e.score.toFixed(3), (x1+x2)/2, (y1+y2)/2 - 10);
+  }
+  ctx.restore();
+}
+
+function frame(t){
+  ctx.clearRect(0, 0, W, H);
+  for(const s of stars){
+    ctx.globalAlpha = .25 + .35 * Math.abs(Math.sin(t/1400 + s.p));
+    ctx.fillStyle = "#aFC4ff"; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.29); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  for(const e of edges) drawEdge(e, t);
+  for(let i = pulses.length - 1; i >= 0; i--){
+    const p = pulses[i];
+    const a = nodes[p.from], b = nodes[p.to];
+    if(!a || !b){ pulses.splice(i, 1); continue; }
+    const [x1, y1] = P(a.x, a.y), [x2, y2] = P(b.x, b.y);
+    const x = x1 + (x2 - x1) * p.t, y = y1 + (y2 - y1) * p.t;
+    ctx.save(); ctx.fillStyle = p.color; ctx.shadowColor = p.color; ctx.shadowBlur = 9;
+    ctx.beginPath(); ctx.arc(x, y, p.width, 0, 6.29); ctx.fill(); ctx.restore();
+    p.t += p.speed;
+    if(p.t > 1) pulses.splice(i, 1);
+  }
+  for(const id in nodes) drawNode(nodes[id], t);
+  requestAnimationFrame(frame);
+}
+
+function caption(html){ $("#stageCaption").innerHTML = html; }
+
+function traitRow(axis, v){
+  return '<div class="trait"><span class="t-name">' + axis.label + '</span>' +
+    '<span class="t-bar"><span class="t-fill" data-axis="' + axis.key + '" style="width:0%"></span></span>' +
+    '<span class="t-val" data-val="' + axis.key + '">' + v.toFixed(2) + '</span></div>';
+}
+
+function renderProfile(){
+  const p = D.protagonist, tr = D.protagonist_traits;
+  const chips = (arr, cls) => arr.map(x => '<span class="chip ' + (cls||"") + '">' + x + '</span>').join("");
+  $("#profileBody").innerHTML =
+    '<div class="fade-item"><span class="p-name">' + p.name + '</span><span class="p-meta">' + p.age + " · " + p.city + " · " + p.job + '</span></div>' +
+    '<p class="p-essence fade-item">' + p.essence + '</p>' +
+    '<div class="p-sec fade-item"><div class="k">价值观（排序）</div><div class="chips">' + chips(p.values) + '</div></div>' +
+    '<div class="p-sec fade-item"><div class="k">特质滑杆 · sim 求同 / comp 互补</div>' +
+      D.axes.map(a => traitRow(a, tr[a.key])).join("") + '</div>' +
+    '<div class="grid2 fade-item"><div class="p-sec"><div class="k">我寻找 needs</div><div class="chips">' + chips(p.needs, "need") + '</div></div>' +
+    '<div class="p-sec"><div class="k">我能给 offers</div><div class="chips">' + chips(p.offers, "offer") + '</div></div></div>' +
+    '<div class="p-sec fade-item"><div class="k">兴趣</div><div class="chips">' + chips(p.interests) + '</div></div>';
+  const items = $("#profileBody").querySelectorAll(".fade-item");
+  items.forEach((el, i) => setTimeout(() => el.classList.add("in"), 120 * i));
+  setTimeout(() => {
+    D.axes.forEach(a => {
+      const f = document.querySelector('[data-axis="' + a.key + '"]');
+      if(f) f.style.width = (D.protagonist_traits[a.key] * 100) + "%";
+    });
+  }, 350);
+}
+
+async function phase1(){
+  if(animating || phase >= 1) return; animating = true; phase = 1;
+  caption("阿哲的三个 agent 各自蒸馏出画像的一部分 — 光流汇向 X-Agent，正在拼成同一张画像卡……");
+  const srcIds = D.sources.map((_, i) => "src" + i);
+  for(const id of srcIds){ nodes[id].alpha = 0; }
+  for(let k = 0; k < 30; k++){
+    srcIds.forEach(id => { if(nodes[id].alpha < 1) nodes[id].alpha = Math.min(1, (nodes[id].alpha||0) + .08); });
+    if(k % 4 === 0) srcIds.forEach(id => spawnPulse(id, heroId, "#57c7ff", .02, 1.8));
+    await sleep(50);
+  }
+  renderProfile();
+  await sleep(900);
+  caption("蒸馏完成。注意：进入池子的只有这张<b>结构化画像卡</b> — 原始聊天记录，一个字都没有离开过阿哲的 agent。");
+  $("#btn2").disabled = false; animating = false;
+}
+
+async function phase2(){
+  if(animating || phase >= 2) return; animating = true; phase = 2;
+  $("#chatBody").innerHTML = "";
+  for(const beat of D.qa_beats){
+    caption("X-Agent 在追问 — 每个新答案都会被再次蒸馏，merge 进画像卡。");
+    const q = document.createElement("div");
+    q.className = "bubble q"; q.innerHTML = '<span class="who">X-Agent</span>' + beat.q;
+    $("#chatBody").appendChild(q); await sleep(1100);
+    const a = document.createElement("div");
+    a.className = "bubble a"; a.innerHTML = '<span class="who">' + D.protagonist.name + '</span>' + beat.a;
+    $("#chatBody").appendChild(a); await sleep(1000);
+    for(const u of beat.updates){
+      const axis = D.axes.find(x => u.label.indexOf(x.label) >= 0);
+      if(axis){
+        const f = document.querySelector('[data-axis="' + axis.key + '"]');
+        const v = document.querySelector('[data-val="' + axis.key + '"]');
+        if(f) f.style.width = (u.to * 100) + "%";
+        if(v) v.textContent = u.to.toFixed(2);
+      } else {
+        const chip = [...document.querySelectorAll(".chip.need")].find(c => u.label.indexOf(c.textContent) >= 0);
+        if(chip){ chip.classList.remove("flash"); void chip.offsetWidth; chip.classList.add("flash"); }
+      }
+    }
+    await sleep(800);
+  }
+  caption("画像更新完毕 — 它是<b>活的</b>：置信度加权 merge，新证据推动它，但从不推翻它。");
+  $("#btn3").disabled = false; animating = false;
+}
+
+function fillMatchPanel(r, title, extraNote){
+  const c = r.candidate, bd = r.breakdown;
+  const rows = [
+    ["她覆盖你的需求", bd.needs_covered_by_candidate],
+    ["你覆盖她的需求", bd.needs_covered_by_protagonist],
+    ["价值观契合", bd.values], ["特质合拍/互补", bd.traits], ["共同兴趣", bd.interests],
+  ];
+  $("#matchBody").innerHTML =
+    '<div class="winner-name">' + title + "：" + c.name + '<span class="score">' + r.score.toFixed(3) + '</span></div>' +
+    '<div class="p-meta" style="margin:4px 0 6px">' + c.age + " 岁 · " + c.city + " · " + c.job + '</div>' +
+    '<p class="p-essence">' + c.essence + '</p>' +
+    r.reasons.map(x => '<div class="reason">' + x + '</div>').join("") +
+    '<div style="margin-top:10px">' + rows.map(x =>
+      '<div class="bd-row"><span class="b-name">' + x[0] + '</span><span class="b-bar"><span class="b-fill" style="width:' + (x[1]*100) + '%"></span></span><span class="b-val">' + x[1].toFixed(2) + '</span></div>').join("") + '</div>' +
+    '<div class="dirline">双向分：她合你 <b>' + r.score_a_to_b.toFixed(3) + '</b> · 你合她 <b>' + r.score_b_to_a.toFixed(3) + '</b><br>最终分 = 两者的<b>调和平均</b> — 任何一头塌了，整体就塌。</div>' +
+    (extraNote ? '<div class="note">' + extraNote + '</div>' : "");
+}
+
+async function lockWinner(r, captionHtml){
+  const e = edges.find(x => x.to === r.candidate_id);
+  if(e){ e.state = "winner"; e.score = r.score; }
+  caption(captionHtml);
+  const iv = setInterval(() => { if(e) spawnPulse(heroId, r.candidate_id, "#ff8a5e", .011, 2.2); }, 420);
+  setTimeout(() => clearInterval(iv), 6000);
+  spawnPulse(heroId, r.candidate_id, "#ff4d5e", .011, 2.6);
+}
+
+async function phase3(){
+  if(animating || phase >= 3) return; animating = true; phase = 3;
+  caption("开始匹配：先过硬约束，再算双向分 — 每条候选连接都会当场评估。");
+  await sleep(700);
+  const ranking = D.rankings.default;
+  for(const r of ranking){
+    const e = {to: r.candidate_id, state: "evaluating", prog: 0, score: null, passed: r.passed};
+    edges.push(e);
+    for(let k = 0; k <= 10; k++){ e.prog = k / 10; await sleep(24); }
+    e.score = r.score;
+    e.state = r.passed ? "kept" : "rejected";
+    if(!r.passed) caption("✕ <b>" + r.candidate.name + "</b> 被硬约束淘汰：" + r.failed_rules[0]);
+    await sleep(r.passed ? 210 : 620);
+  }
+  const winner = ranking.find(r => r.passed);
+  fillMatchPanel(winner, "最佳连接", "");
+  await lockWinner(winner, "千条连接里，只有一条亮到最后 — <b>" + winner.candidate.name + "</b>，双向匹配 " + winner.score.toFixed(3) + "。这就是红线。");
+  $("#btn4").disabled = false; animating = false;
+}
+
+async function phase4(){
+  if(animating || phase >= 4) return; animating = true; phase = 4;
+  const fb = D.feedback;
+  caption("阿哲看了一眼，说：<b>「" + fb.text + "」</b>");
+  await sleep(1300);
+  const oldWinner = edges.find(e => e.state === "winner");
+  if(oldWinner){ oldWinner.state = "kept"; oldWinner.score = null; }
+  const ranking = D.rankings.after_feedback;
+  const winner = ranking.find(r => r.passed);
+  const demoted = ranking.find(r => r.demoted_by_feedback && r.candidate_id === (oldWinner ? oldWinner.to : ""));
+  const note = fb.note + (demoted ? " " + demoted.candidate.name + " 因此从 " +
+    D.rankings.default.find(r => r.candidate_id === demoted.candidate_id).score.toFixed(3) +
+    " 降到 " + demoted.score.toFixed(3) + "。" : "");
+  fillMatchPanel(winner, "反馈后的连接", note);
+  const e = edges.find(x => x.to === winner.candidate_id);
+  if(e){ e.state = "winner"; e.score = winner.score; }
+  const iv = setInterval(() => spawnPulse(heroId, winner.candidate_id, "#ff8a5e", .011, 2.2), 420);
+  setTimeout(() => clearInterval(iv), 6000);
+  caption("反馈没有重掷骰子 — 它变成了一条<b>可解释的门槛</b>。红线断开，又重新系上：<b>" + winner.candidate.name + "</b>。");
+  animating = false;
+}
+
+$("#btn1").onclick = phase1;
+$("#btn2").onclick = phase2;
+$("#btn3").onclick = phase3;
+$("#btn4").onclick = phase4;
+$("#btnReset").onclick = () => location.reload();
+$("#btnAuto").onclick = async () => {
+  $("#btnAuto").disabled = true;
+  await phase1(); await sleep(600);
+  await phase2(); await sleep(600);
+  await phase3(); await sleep(1600);
+  await phase4();
+};
+
+fetch("demo_data.json").then(r => { if(!r.ok) throw new Error("bad"); return r.json(); })
+  .then(data => { D = data; heroId = D.protagonist.id; resize(); buildScene(); requestAnimationFrame(frame);
+    if(new URLSearchParams(location.search).has("auto")) setTimeout(() => $("#btnAuto").click(), 700); })
+  .catch(() => { $("#err").style.display = "grid"; });
+resize();
+</script>
+</body>
+</html>
