@@ -58,7 +58,7 @@ Matching runs in three named steps:
 
 **Step 2 — Directional fit.** "She fits him" and "he fits her" are scored separately. Only one component is directional; the rest are symmetric:
 
-$$F(A \to B) = w_n \cdot \mathrm{cover}(A.\mathrm{needs},\, B.\mathrm{offers}) + w_v \cdot V(A,B) + w_t \cdot T(A,B) + w_i \cdot J(A,B)$$
+$$F(A \to B) = w_n \cdot \mathrm{cover}(A.\mathrm{needs}, B.\mathrm{offers}) + w_v \cdot V(A,B) + w_t \cdot T(A,B) + w_i \cdot J(A,B)$$
 
 | Component | Meaning | How it is computed | Weight |
 |---|---|---|---|
@@ -194,7 +194,7 @@ X-Agent 是一个**智能体池匹配网络**。每个人身边都有越来越�
 
 **第二步 · 双向契合（Directional Fit）** — 「她合他」和「他合她」是两个分数。其中只有需求覆盖是方向性的，其余分量对称：
 
-$$F(A \to B) = w_n \cdot \mathrm{cover}(A.\mathrm{needs},\, B.\mathrm{offers}) + w_v \cdot V(A,B) + w_t \cdot T(A,B) + w_i \cdot J(A,B)$$
+$$F(A \to B) = w_n \cdot \mathrm{cover}(A.\mathrm{needs}, B.\mathrm{offers}) + w_v \cdot V(A,B) + w_t \cdot T(A,B) + w_i \cdot J(A,B)$$
 
 | 分量 | 含义 | 怎么算 | 权重 |
 |---|---|---|---|
