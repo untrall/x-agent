@@ -1,0 +1,17 @@
+{
+  "probe": "upstream rounding defect reproduced",
+  "cases": [
+    {
+      "role": "co-founder",
+      "weighted": 0.911,
+      "expectedRoundedPercentage": 91,
+      "actual": 100
+    },
+    {
+      "role": "unrelated-role",
+      "weighted": 0.611,
+      "expectedRoundedPercentage": 61,
+      "actual": 100
+    }
+  ]
+}

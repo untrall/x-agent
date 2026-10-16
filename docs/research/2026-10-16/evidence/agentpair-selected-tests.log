@@ -1,0 +1,11 @@
+
+ RUN  v3.2.7 /Users/MacBook/projects/2026_10_17_hackathon/agent-pair-protocol
+
+ ✓ packages/protocol/src/session/validate.test.ts (6 tests) 4ms
+ ✓ packages/protocol/src/session/budget-extend.test.ts (20 tests) 68ms
+ ✓ packages/protocol/src/session/state-machine.test.ts (131 tests) 189ms
+
+ Test Files  3 passed (3)
+      Tests  157 passed (157)
+   Start at  10:41:25
+   Duration  636ms (transform 181ms, setup 0ms, collect 447ms, tests 260ms, environment 0ms, prepare 191ms)

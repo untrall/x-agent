@@ -1,0 +1,33 @@
+{
+  "id": "cofounder.v1",
+  "name": "创业合伙人",
+  "fields": {
+    "weekly_hours": {
+      "label": "每周投入小时",
+      "type": "number",
+      "aliases": [
+        "每周",
+        "每周投入",
+        "小时"
+      ],
+      "pattern": "(?:每周(?:投入)?(?:至少)?|weekly_hours\\s*(?:>=|=))\\s*(\\d+)",
+      "default_op": "gte"
+    },
+    "ai_product_experience": {
+      "label": "AI 产品经验",
+      "type": "boolean",
+      "aliases": [
+        "AI 产品经验",
+        "AI产品经验"
+      ],
+      "default_op": "eq"
+    }
+  },
+  "initial_requirements": [],
+  "followup": {
+    "field": "ai_product_experience",
+    "title": "是否还要求 AI 产品经验？",
+    "prompt": "已有潜在候选。是否要求创业合伙人具备 AI 产品经验？可以直接说明你的想法。"
+  },
+  "result_title": "试合作提案"
+}

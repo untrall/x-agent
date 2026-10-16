@@ -1,0 +1,55 @@
+Scope: all 6 workspace projects
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +519
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 519, reused 0, downloaded 30, added 30
+Progress: resolved 519, reused 0, downloaded 46, added 46
+ WARN  GET https://registry.npmjs.org/chai/-/chai-5.3.3.tgz error (ECONNRESET). Will retry in 10 seconds. 2 retries left.
+Progress: resolved 519, reused 0, downloaded 64, added 65
+Progress: resolved 519, reused 0, downloaded 90, added 91
+ WARN  GET https://registry.npmjs.org/http-errors/-/http-errors-2.0.1.tgz error (ECONNRESET). Will retry in 10 seconds. 2 retries left.
+Progress: resolved 519, reused 0, downloaded 121, added 123
+Progress: resolved 519, reused 0, downloaded 155, added 157
+Progress: resolved 519, reused 0, downloaded 186, added 187
+Progress: resolved 519, reused 0, downloaded 215, added 216
+ WARN  GET https://registry.npmjs.org/@stoplight/spectral-runtime/-/spectral-runtime-1.1.6.tgz error (ECONNRESET). Will retry in 10 seconds. 2 retries left.
+Progress: resolved 519, reused 0, downloaded 241, added 242
+ WARN  GET https://registry.npmjs.org/is-date-object/-/is-date-object-1.1.0.tgz error (ECONNRESET). Will retry in 10 seconds. 2 retries left.
+Progress: resolved 519, reused 0, downloaded 270, added 272
+Progress: resolved 519, reused 0, downloaded 299, added 300
+Progress: resolved 519, reused 0, downloaded 329, added 329
+ WARN  GET https://registry.npmjs.org/@stoplight/spectral-formats/-/spectral-formats-1.8.5.tgz error (ECONNRESET). Will retry in 10 seconds. 2 retries left.
+Progress: resolved 519, reused 0, downloaded 349, added 351
+ WARN  GET https://registry.npmjs.org/is-extglob/-/is-extglob-2.1.1.tgz error (ECONNRESET). Will retry in 10 seconds. 2 retries left.
+Progress: resolved 519, reused 0, downloaded 368, added 370
+Progress: resolved 519, reused 0, downloaded 387, added 389
+ WARN  GET https://registry.npmjs.org/pluralize/-/pluralize-8.0.0.tgz error (ECONNRESET). Will retry in 10 seconds. 2 retries left.
+Progress: resolved 519, reused 0, downloaded 411, added 413
+Progress: resolved 519, reused 0, downloaded 421, added 423
+Progress: resolved 519, reused 0, downloaded 442, added 444
+Progress: resolved 519, reused 0, downloaded 446, added 448
+ WARN  GET https://registry.npmjs.org/bindings/-/bindings-1.5.0.tgz error (ECONNRESET). Will retry in 10 seconds. 2 retries left.
+Progress: resolved 519, reused 0, downloaded 449, added 451
+Progress: resolved 519, reused 0, downloaded 453, added 455
+Progress: resolved 519, reused 0, downloaded 466, added 468
+ WARN  GET https://registry.npmjs.org/fs-constants/-/fs-constants-1.0.0.tgz error (ECONNRESET). Will retry in 10 seconds. 2 retries left.
+Progress: resolved 519, reused 0, downloaded 487, added 489
+Progress: resolved 519, reused 0, downloaded 499, added 502
+Progress: resolved 519, reused 0, downloaded 513, added 516
+ WARN  GET https://registry.npmjs.org/pluralize/-/pluralize-8.0.0.tgz error (ECONNRESET). Will retry in 1 minute. 1 retries left.
+Progress: resolved 519, reused 0, downloaded 514, added 516
+Progress: resolved 519, reused 0, downloaded 514, added 517
+Progress: resolved 519, reused 0, downloaded 515, added 517
+Progress: resolved 519, reused 0, downloaded 515, added 518
+Progress: resolved 519, reused 0, downloaded 516, added 518
+Progress: resolved 519, reused 0, downloaded 516, added 519, done
+
+devDependencies:
++ @biomejs/biome 1.9.4
++ husky 9.1.7
++ lint-staged 15.5.2
++ typescript 5.9.3
++ vitest 3.2.7
+
+Done in 1m 26.6s using pnpm v10.6.5

@@ -1,0 +1,44 @@
+{
+  "agent_id": "agent-1",
+  "owner_id": "owner-1",
+  "name": "林澈",
+  "host": "127.0.0.1",
+  "port": 8011,
+  "database": "../../.local/mvp/agent-1.sqlite3",
+  "token": "demo-token-1",
+  "scenario": "cofounder.json",
+  "profile": {
+    "facts": {
+      "weekly_hours": 25
+    },
+    "public_fields": [
+      "weekly_hours",
+      "ai_product_experience"
+    ],
+    "tags": [
+      "技术创始人"
+    ],
+    "description": "技术创始人，正在寻找创业合伙人。"
+  },
+  "peers": [
+    {
+      "agent_id": "agent-2",
+      "name": "周然",
+      "url": "http://127.0.0.1:8012",
+      "token": "demo-token-2"
+    },
+    {
+      "agent_id": "agent-3",
+      "name": "陈予",
+      "url": "http://127.0.0.1:8013",
+      "token": "demo-token-3"
+    },
+    {
+      "agent_id": "agent-4",
+      "name": "苏禾",
+      "url": "http://127.0.0.1:8014",
+      "token": "demo-token-4"
+    }
+  ],
+  "owner_token": "demo-owner-1"
+}

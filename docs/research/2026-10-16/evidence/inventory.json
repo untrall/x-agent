@@ -1,0 +1,178 @@
+[
+  {
+    "name": "A2A",
+    "tracked_files": 142,
+    "license_files": [
+      "LICENSE"
+    ],
+    "sha": "1205f45951ca97c209634ce6046180e38c5dfb30"
+  },
+  {
+    "name": "a2a-js",
+    "tracked_files": 344,
+    "license_files": [
+      "LICENSE"
+    ],
+    "sha": "10f89379274bf72575a9ab83c1aaa52e5378e9c6"
+  },
+  {
+    "name": "a2a-python",
+    "tracked_files": 362,
+    "license_files": [
+      "LICENSE"
+    ],
+    "sha": "a4c4fc91a22778f3d805e5e592bf690915a33033"
+  },
+  {
+    "name": "a2a-samples",
+    "tracked_files": 866,
+    "license_files": [
+      "LICENSE"
+    ],
+    "sha": "6603ba3f2c31a7ef33e70b9d8b5b5f8be42ac9a3"
+  },
+  {
+    "name": "agent-pair-protocol",
+    "tracked_files": 292,
+    "license_files": [
+      "LICENSE"
+    ],
+    "sha": "35c271c9bd9dbd10ba15f2c0fe955d23ea314437"
+  },
+  {
+    "name": "agent-protocol",
+    "tracked_files": 181,
+    "license_files": [
+      "LICENSE"
+    ],
+    "sha": "440a86ba097b4bc41e8da007b24e419ec07a3e35"
+  },
+  {
+    "name": "agent-rendezvous",
+    "tracked_files": 71,
+    "license_files": [
+      "LICENSE"
+    ],
+    "sha": "f158ccc68af2979a7fabf293a8868014ee71b454"
+  },
+  {
+    "name": "agentchat",
+    "tracked_files": 203,
+    "license_files": [
+      "LICENSE"
+    ],
+    "sha": "f845e472a95fd33fc762fbc68fd5f671a5658b57"
+  },
+  {
+    "name": "agi-agent-protocol",
+    "tracked_files": 210,
+    "license_files": [
+      "LICENSE"
+    ],
+    "sha": "5047199152dc6e1ba83320b1b59f94af24046dcf"
+  },
+  {
+    "name": "ai-agents-p2p",
+    "tracked_files": 189,
+    "license_files": [],
+    "sha": "fbd2da4b403fe12f9e90bd566fe667a0c98a8378"
+  },
+  {
+    "name": "consent-scoped-agent-negotiation",
+    "tracked_files": 85,
+    "license_files": [
+      "LICENSE"
+    ],
+    "sha": "f2c0502de6674a5667b72f12e081d30e9d696847"
+  },
+  {
+    "name": "hani",
+    "tracked_files": 162,
+    "license_files": [
+      "LICENSE"
+    ],
+    "sha": "616202eaacaf557cc8cc083b6794a77775a1edd8"
+  },
+  {
+    "name": "in-bed-ai",
+    "tracked_files": 440,
+    "license_files": [
+      "LICENSE"
+    ],
+    "sha": "ddc67fd347589dfa0b3282e0cee8a25667a8e39b"
+  },
+  {
+    "name": "JuntoAI-A2A",
+    "tracked_files": 765,
+    "license_files": [],
+    "sha": "08e7a7cdedc6c46248b57fb24bf75ae1e992561f"
+  },
+  {
+    "name": "jupiter",
+    "tracked_files": 34,
+    "license_files": [
+      "LICENSE"
+    ],
+    "sha": "eca289d4a1e7e9a3cf4d38fb6f827a57fc85aa98"
+  },
+  {
+    "name": "langgraph",
+    "tracked_files": 691,
+    "license_files": [
+      "LICENSE"
+    ],
+    "sha": "e77a5cb08c1f3ff306d997dd76fc7169afdab5ea"
+  },
+  {
+    "name": "langgraphjs",
+    "tracked_files": 2007,
+    "license_files": [
+      "LICENSE"
+    ],
+    "sha": "61807113665e4875c6ec8fd34c6f6c9f7becf497"
+  },
+  {
+    "name": "matchclaws",
+    "tracked_files": 5,
+    "license_files": [
+      "LICENSE"
+    ],
+    "sha": "6621edc82df7d246680a0480aaf41be8aa52a40c"
+  },
+  {
+    "name": "openclaw",
+    "tracked_files": 56314,
+    "license_files": [
+      "LICENSE"
+    ],
+    "sha": "18044d5bb00baa7a4cbc12236095a5524b98ee27"
+  },
+  {
+    "name": "PROXAI",
+    "tracked_files": 149,
+    "license_files": [],
+    "sha": "ae07c7f3bbf3830293149643f1e357404851ea22"
+  },
+  {
+    "name": "secure-ai-agent-matching-platform",
+    "tracked_files": 335,
+    "license_files": [
+      "LICENSE"
+    ],
+    "sha": "2263ba25a72cf14a16bbcc8234053e4926fdd139"
+  },
+  {
+    "name": "tacit",
+    "tracked_files": 217,
+    "license_files": [
+      "LICENSE"
+    ],
+    "sha": "e03773e62ba786baa797cc5cf98f08da093b7bbd"
+  },
+  {
+    "name": "Trialmatch.ai",
+    "tracked_files": 113,
+    "license_files": [],
+    "sha": "4bb137cf795746b4160a4b10ef004a1b2ad6d4c5"
+  }
+]

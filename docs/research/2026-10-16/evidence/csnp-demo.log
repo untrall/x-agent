@@ -1,0 +1,76 @@
+CSNP 0.1.0 (protocol 0.1)
+Consent-scoped agent-to-agent negotiation.
+An independent open-source project. Not an Anthropic product.
+
+workspace : /Users/MacBook/projects/2026_10_17_hackathon/consent-scoped-agent-negotiation/csnp-demo-run
+transport : tls
+model     : mock (deterministic)
+gates     : scripted, recorded as such
+
+--- Task -----------------------------------------------------------
+  Find a meeting time (schedule.meeting)
+  readable field : busy_free
+  everything else: denied by the data layer
+
+--- Ana's audit log ------------------------------------------------
+2026-10-16T02:42:05Z  ana     GATE 1 consent to open    GRANTED by Ana (scripted) for 2380ae35e0f6495f857b3c88b7b47c5d
+2026-10-16T02:42:05Z  ana     consent envelope loaded   domain=schedule, envelope_id=2380ae35e0f6495f857b3c88b7b47c5d, expires_at=2026-10-16T03:12:05Z, fields=["busy_free"], granularity_minutes=30, purpose=meeting-slot
+2026-10-16T02:42:05Z  ana     session opened            agent_id=csnp1:f5493118092b7b2f7164fecf4eb051a7, catalog_hash=sha256:51e6d96f4bd4d332b0199a85bec5bb289bfc9dde63566b006a..., catalog_id=meeting-slots, envelope_digest=sha256:9231ffb207957d4c962be99649719eb46cc5062b681e21e5d7..., envelope_id=2380ae35e0f6495f857b3c88b7b47c5d, peer_agent_id=csnp1:93b37d10e4b5f948c8f04dc0d7b93605, principal=Ana, role=initiator, transport=tls://127.0.0.1:51316
+2026-10-16T02:42:05Z  ana     SENT                      hello  catalog_hash=sha256:51e6d96f4bd4d332b0199a85bec5bb289bfc9dde63566b006a..., catalog_id=meeting-slots, envelope_digest=sha256:9231ffb207957d4c962be99649719eb46cc5062b681e21e5d7..., max_options=3, max_rounds=6, not_after=2026-10-16T03:12:05Z, purpose=meeting-slot, role=initiator
+2026-10-16T02:42:05Z  ana     RECEIVED                  hello_ack  catalog_hash=sha256:51e6d96f4bd4d332b0199a85bec5bb289bfc9dde63566b006a..., envelope_digest=sha256:9ba9c2a8225abf9d75241413e7ef998488fa86a8c8b9030f7f..., max_options=3, max_rounds=6, role=responder
+2026-10-16T02:42:05Z  ana     peer identity verified    agreed_max_options=3, agreed_max_rounds=6, peer_agent_id=csnp1:93b37d10e4b5f948c8f04dc0d7b93605, peer_envelope_digest=sha256:9ba9c2a8225abf9d75241413e7ef998488fa86a8c8b9030f7f...
+2026-10-16T02:42:05Z  ana     model decision            action=offer, note_code=PREFER_EARLIER, option_id=null, option_ids=["opt-0002", "opt-0003", "opt-0005"], rationale_code=EARLIEST, round=1, source=mock
+2026-10-16T02:42:05Z  ana     DISCLOSED                 3 public option id(s) to csnp1:93b37d10e4b5f948c8f04dc0d7b93605: opt-0002, opt-0003, opt-0005  [inference: Ana is available for these 3 option(s) within the granted window]
+2026-10-16T02:42:05Z  ana     SENT                      offer  note_code=PREFER_EARLIER, option_ids=["opt-0002", "opt-0003", "opt-0005"], round=1
+2026-10-16T02:42:05Z  ana     RECEIVED                  counter  note_code=PREFER_EARLIER, option_ids=["opt-0004", "opt-0006", "opt-0007"], round=1
+2026-10-16T02:42:05Z  ana     model decision            action=accept, note_code=null, option_id=opt-0006, option_ids=[], rationale_code=MATCHES_COUNTERPART, round=2, source=mock
+2026-10-16T02:42:05Z  ana     GATE 2 consent to commit  GRANTED by Ana (scripted) for opt-0006
+2026-10-16T02:42:05Z  ana     SENT                      accept  option_id=opt-0006, round=1
+2026-10-16T02:42:05Z  ana     RECEIVED                  confirm  option_id=opt-0006
+2026-10-16T02:42:05Z  ana     agreement reached         option=opt-0006 title=Working session
+2026-10-16T02:42:05Z  ana     committed locally         option=opt-0006 approval=aa1581f35a394ada99154e90c153d5f3
+2026-10-16T02:42:05Z  ana     session closed            disclosed=["opt-0002", "opt-0003", "opt-0005"], rounds=1, state=agreed
+
+--- John's audit log -----------------------------------------------
+2026-10-16T02:42:05Z  john    GATE 1 consent to open    GRANTED by John (scripted) for 767e18c2a6c44a2c84f51854b472431e
+2026-10-16T02:42:05Z  john    consent envelope loaded   domain=schedule, envelope_id=767e18c2a6c44a2c84f51854b472431e, expires_at=2026-10-16T03:12:05Z, fields=["busy_free"], granularity_minutes=30, purpose=meeting-slot
+2026-10-16T02:42:05Z  john    RECEIVED                  hello  catalog_hash=sha256:51e6d96f4bd4d332b0199a85bec5bb289bfc9dde63566b006a..., catalog_id=meeting-slots, envelope_digest=sha256:9231ffb207957d4c962be99649719eb46cc5062b681e21e5d7..., max_options=3, max_rounds=6, not_after=2026-10-16T03:12:05Z, purpose=meeting-slot, role=initiator
+2026-10-16T02:42:05Z  john    session opened            agent_id=csnp1:93b37d10e4b5f948c8f04dc0d7b93605, catalog_hash=sha256:51e6d96f4bd4d332b0199a85bec5bb289bfc9dde63566b006a..., catalog_id=meeting-slots, envelope_digest=sha256:9ba9c2a8225abf9d75241413e7ef998488fa86a8c8b9030f7f..., envelope_id=767e18c2a6c44a2c84f51854b472431e, peer_agent_id=csnp1:f5493118092b7b2f7164fecf4eb051a7, principal=John, role=responder, transport=tls://127.0.0.1:51317
+2026-10-16T02:42:05Z  john    peer identity verified    agreed_max_options=3, agreed_max_rounds=6, peer_agent_id=csnp1:f5493118092b7b2f7164fecf4eb051a7, peer_envelope_digest=sha256:9231ffb207957d4c962be99649719eb46cc5062b681e21e5d7...
+2026-10-16T02:42:05Z  john    SENT                      hello_ack  catalog_hash=sha256:51e6d96f4bd4d332b0199a85bec5bb289bfc9dde63566b006a..., envelope_digest=sha256:9ba9c2a8225abf9d75241413e7ef998488fa86a8c8b9030f7f..., max_options=3, max_rounds=6, role=responder
+2026-10-16T02:42:05Z  john    RECEIVED                  offer  note_code=PREFER_EARLIER, option_ids=["opt-0002", "opt-0003", "opt-0005"], round=1
+2026-10-16T02:42:05Z  john    model decision            action=offer, note_code=PREFER_EARLIER, option_id=null, option_ids=["opt-0004", "opt-0006", "opt-0007"], rationale_code=EARLIEST, round=1, source=mock
+2026-10-16T02:42:05Z  john    DISCLOSED                 3 public option id(s) to csnp1:f5493118092b7b2f7164fecf4eb051a7: opt-0004, opt-0006, opt-0007  [inference: John is available for these 3 option(s) within the granted window]
+2026-10-16T02:42:05Z  john    SENT                      counter  note_code=PREFER_EARLIER, option_ids=["opt-0004", "opt-0006", "opt-0007"], round=1
+2026-10-16T02:42:05Z  john    RECEIVED                  accept  option_id=opt-0006, round=1
+2026-10-16T02:42:05Z  john    GATE 2 consent to commit  GRANTED by John (scripted) for opt-0006
+2026-10-16T02:42:05Z  john    SENT                      confirm  option_id=opt-0006
+2026-10-16T02:42:05Z  john    agreement reached         option=opt-0006 title=Working session
+2026-10-16T02:42:05Z  john    committed locally         option=opt-0006 approval=ba8cc54ffb014ec6bc5609b72019508b
+2026-10-16T02:42:05Z  john    session closed            disclosed=["opt-0004", "opt-0006", "opt-0007"], rounds=1, state=agreed
+
+--- Outcome --------------------------------------------------------
+  Ana : agreed on opt-0006 (Working session)
+  John: agreed on opt-0006 (Working session)
+  Ana disclosed  : opt-0002, opt-0003, opt-0005
+  John disclosed : opt-0004, opt-0006, opt-0007
+
+--- Disclosure check on the transmitted bytes ----------------------
+  private canaries searched for: 4
+frames inspected      : 6
+distinct string values: 39
+  agent id (public key hash):   2  csnp1:93b37d10e4b5f948c8f04dc0d7b93605, csnp1:f5493118092b7b2f7164fecf4eb051a7
+  catalog option id     :   6  opt-0002, opt-0003, opt-0004, opt-0005, opt-0006, opt-0007
+  digest                :   3  sha256:51e6d96f4bd4d332b0199a85bec5bb289bfc9dde63566b006aefc723c1caa8ea, sha256:9231ffb207957d4c962be99649719eb46cc5062b681e21e5d7c5423af29735e6, sha256:9ba9c2a8225abf9d75241413e7ef998488fa86a8c8b9030f7ff72e73afe49601
+  protocol constant     :  11  0.1, PREFER_EARLIER, accept, confirm, counter, ed25519 ...
+  purpose label         :   2  meeting-slot, meeting-slots
+  session or message id :   7  129dd2eb4378414eb3b30ed80829b907, 14540e2647a44f0ba1003381ef4dff00, 21a34914696e4b048c7a9db170486ce2, 3c95ade9d19f40a49421f959b59730b2, 622d30025afe492db088b1c846876f54, 88652e42181f420488ea9881132667f3 ...
+  signature             :   6  43uMC6FqdWHJkH21ilaaGmijvmRAZ/wUFWKyskxZ0HRxkQ0ooqpK9QlZtTJSpf7e/ZjXwA3PNzl1/bZY6xDPAw==, 6mO8Le1yWH5fA3jSxerBlTuadOXNU3wzM431Y/wP4lLGshr2Dw7loPGK+n4LDN8gRDqA25Wu1XL/ixMNQzSjCw==, GLJNrEsqWAScACZWd9V2b3xlJWMYhwyu/JAJQH1t3YuoM6MJneOKI0p6+NsquG7gMmgCSALYmG5mvBD3jiiODw==, KhDfZtsphCZMAqH1nM17B1a6lVZtDFf0SHRQq2X+D41T8CoWAHWu1/pFQUvgSSFpk2WC3Eos2E9wpzaKBTAIBA==, NQnwKxka3TnN+NWw9Yrq74o24Tv+eernHKRVm83kC/CDgfSgbkslzgeRMM9Oo+Zma+Cw5qTQ2BJ/CqncIha4CQ==, eFAUXxALAitNz0kdNP6O+1CYqVS4ZniTaiRqsZsjp8eG1in1YV7+XdADGKFs5+nnFt7qeAeOzIhfgHg2SpazCg==
+  timestamp             :   2  2026-10-16T02:42:05Z, 2026-10-16T03:12:05Z
+RESULT: no private data crossed the wire
+
+Note: the option ids above are public catalog entries both machines
+already held. Which ids were selected is itself an inference channel;
+THREAT-MODEL.md section 4 describes it and what bounds it.
+
+Demo complete. Both principals approved; each side committed locally.

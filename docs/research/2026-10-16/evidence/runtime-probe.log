@@ -1,0 +1,3 @@
+{"phase": "paused", "session_id": "s-1", "version": 1}
+{"phase": "resumed_in_new_process", "result": {"session_id": "s-1", "profile_version": 2, "status": "renegotiating", "answer": "yes, if AI product experience"}}
+{"probe": "A2A ASGI JSON-RPC roundtrip", "card": "ok", "states": ["TASK_STATE_INPUT_REQUIRED", "TASK_STATE_COMPLETED"], "same_task_and_context": true, "artifact": true}

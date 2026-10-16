@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#101b27">
+    <title>X-Agent · 创业合伙人协商台</title>
+    <link rel="stylesheet" href="./styles.css">
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand" aria-label="X-Agent">
+          <span class="brand-mark" aria-hidden="true">X<span>·</span></span>
+          <span class="brand-copy"><strong>X-Agent</strong><small>协商工作台</small></span>
+        </div>
+        <div class="topbar-controls">
+          <label class="control-pair" for="mode-select"><span>运行方式</span><select id="mode-select"><option value="sample">本地样例</option><option value="api">本地 API</option></select></label>
+          <label class="control-pair" for="owner-select"><span>演示身份</span><select id="owner-select"><option value="owner-a">林澈 · 发起方</option><option value="owner-b">陈予 · 候选方</option></select></label>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="left-rail" aria-label="身份与候选人">
+          <div class="rail-heading"><span class="eyebrow">01 / PERSONA</span><h2>你的公开名片</h2></div>
+          <section id="profile-card" class="profile-card" aria-live="polite"></section>
+          <div class="rail-heading candidates-heading"><span class="eyebrow">02 / DISCOVER</span><h2>发现候选人</h2></div>
+          <div id="candidate-list" class="candidate-list"></div>
+          <p class="rail-note">演示资料为合成样例。经历由当事人自述，尚未核实。</p>
+        </aside>
+
+        <section class="main-panel" aria-label="协商进展">
+          <div class="hero">
+            <div class="hero-topline"><span class="eyebrow">X-AGENT / COFOUNDER 01</span><span id="mode-badge" class="mode-badge">本地样例</span></div>
+            <h1>找到能一起<br><em>把想法做成产品</em>的人。</h1>
+            <p>让双方的代理先交换公开条件；需要你的判断时，协商会停下来等你。</p>
+          </div>
+          <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+          <div class="session-bar">
+            <div><span class="eyebrow">LIVE SESSION</span><h2>协商现场</h2></div>
+            <div class="session-actions"><span id="session-status" class="status-pill">未开始</span><button id="new-session-button" class="text-button" type="button" hidden>开始新会话 ↗</button></div>
+          </div>
+          <div id="session-meta" class="session-meta" hidden></div>
+          <div id="timeline" class="timeline" aria-live="polite"></div>
+        </section>
+
+        <aside class="right-rail" aria-label="下一步行动">
+          <div class="rail-heading"><span class="eyebrow">03 / YOUR MOVE</span><h2>下一步，由你决定</h2></div>
+          <div id="action-card" class="action-card" aria-live="polite"></div>
+          <section class="how-it-works">
+            <span class="eyebrow">HOW IT WORKS</span>
+            <ol><li><span>01</span>预览双方公开资料</li><li><span>02</span>代理交换合作条件</li><li><span>03</span>你回答关键问题</li><li><span>04</span>双方确认后生成结果</li></ol>
+          </section>
+        </aside>
+      </main>
+      <footer class="footer"><span>DAY 01 PROTOTYPE</span><span>确定性演示 · 非实时 AI 或真实 A2A 网络</span></footer>
+    </div>
+  </body>
+</html>

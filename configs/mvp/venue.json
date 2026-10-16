@@ -1,0 +1,32 @@
+{
+  "id": "venue.v1",
+  "name": "活动场地",
+  "fields": {
+    "capacity": {
+      "label": "可容纳人数",
+      "type": "number",
+      "aliases": [
+        "人数",
+        "容量"
+      ],
+      "pattern": "(?:人数|容量|capacity\\s*(?:>=|=))\\s*(\\d+)",
+      "default_op": "gte"
+    },
+    "projector": {
+      "label": "投影设备",
+      "type": "boolean",
+      "aliases": [
+        "投影",
+        "投影设备"
+      ],
+      "default_op": "eq"
+    }
+  },
+  "initial_requirements": [],
+  "followup": {
+    "field": "projector",
+    "title": "是否必须提供投影设备？",
+    "prompt": "是否要求场地提供投影设备？可以直接说明你的想法。"
+  },
+  "result_title": "场地意向方案"
+}

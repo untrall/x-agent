@@ -1,0 +1,19 @@
+Using CPython 3.12.13
+Creating virtual environment at: .venv
+   Building csnp @ file:///Users/MacBook/projects/2026_10_17_hackathon/consent-scoped-agent-negotiation
+Downloading pygments (1.2MiB)
+Downloading cryptography (3.7MiB)
+ Downloaded pygments
+ Downloaded cryptography
+      Built csnp @ file:///Users/MacBook/projects/2026_10_17_hackathon/consent-scoped-agent-negotiation
+Installed 11 packages in 36ms
+........................................................................ [ 24%]
+........................................................................ [ 48%]
+....................sss................................................. [ 72%]
+........................................................................ [ 96%]
+.........                                                                [100%]
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_live_model.py:20: set CSNP_LIVE_MODEL=1 to run live model tests
+SKIPPED [1] tests/test_live_model.py:24: set CSNP_LIVE_MODEL=1 to run live model tests
+SKIPPED [1] tests/test_live_model.py:36: set CSNP_LIVE_MODEL=1 to run live model tests
+294 passed, 3 skipped in 12.32s

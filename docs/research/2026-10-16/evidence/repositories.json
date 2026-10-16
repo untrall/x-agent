@@ -1,0 +1,186 @@
+[
+  {
+    "repo": "tacitprotocol/tacit",
+    "directory": "tacit",
+    "clone_ok": true,
+    "log": "ng files:  73% (159/217)\nUpdating files:  74% (161/217)\nUpdating files:  75% (163/217)\nUpdating files:  76% (165/217)\nUpdating files:  77% (168/217)\nUpdating files:  78% (170/217)\nUpdating files:  79% (172/217)\nUpdating files:  80% (174/217)\nUpdating files:  81% (176/217)\nUpdating files:  82% (178/217)\nUpdating files:  83% (181/217)\nUpdating files:  84% (183/217)\nUpdating files:  85% (185/217)\nUpdating files:  86% (187/217)\nUpdating files:  87% (189/217)\nUpdating files:  88% (191/217)\nUpdating files:  89% (194/217)\nUpdating files:  90% (196/217)\nUpdating files:  91% (198/217)\nUpdating files:  92% (200/217)\nUpdating files:  93% (202/217)\nUpdating files:  94% (204/217)\nUpdating files:  95% (207/217)\nUpdating files:  96% (209/217)\nUpdating files:  97% (211/217)\nUpdating files:  98% (213/217)\nUpdating files:  99% (215/217)\nUpdating files: 100% (217/217)\nUpdating files: 100% (217/217), done.\n",
+    "sha": "e03773e62ba786baa797cc5cf98f08da093b7bbd",
+    "commit_date": "2026-03-03T08:56:03-05:00"
+  },
+  {
+    "repo": "rfxlamia/agent-pair-protocol",
+    "directory": "agent-pair-protocol",
+    "clone_ok": true,
+    "log": "ng files:  73% (214/292)\nUpdating files:  74% (217/292)\nUpdating files:  75% (219/292)\nUpdating files:  76% (222/292)\nUpdating files:  77% (225/292)\nUpdating files:  78% (228/292)\nUpdating files:  79% (231/292)\nUpdating files:  80% (234/292)\nUpdating files:  81% (237/292)\nUpdating files:  82% (240/292)\nUpdating files:  83% (243/292)\nUpdating files:  84% (246/292)\nUpdating files:  85% (249/292)\nUpdating files:  86% (252/292)\nUpdating files:  87% (255/292)\nUpdating files:  88% (257/292)\nUpdating files:  89% (260/292)\nUpdating files:  90% (263/292)\nUpdating files:  91% (266/292)\nUpdating files:  92% (269/292)\nUpdating files:  93% (272/292)\nUpdating files:  94% (275/292)\nUpdating files:  95% (278/292)\nUpdating files:  96% (281/292)\nUpdating files:  97% (284/292)\nUpdating files:  98% (287/292)\nUpdating files:  99% (290/292)\nUpdating files: 100% (292/292)\nUpdating files: 100% (292/292), done.\n",
+    "sha": "35c271c9bd9dbd10ba15f2c0fe955d23ea314437",
+    "commit_date": "2026-07-24T11:31:16+07:00"
+  },
+  {
+    "repo": "molanocortes/consent-scoped-agent-negotiation",
+    "directory": "consent-scoped-agent-negotiation",
+    "clone_ok": true,
+    "log": "ng files:  65% (56/85)\nUpdating files:  67% (57/85)\nUpdating files:  68% (58/85)\nUpdating files:  69% (59/85)\nUpdating files:  70% (60/85)\nUpdating files:  71% (61/85)\nUpdating files:  72% (62/85)\nUpdating files:  74% (63/85)\nUpdating files:  75% (64/85)\nUpdating files:  76% (65/85)\nUpdating files:  77% (66/85)\nUpdating files:  78% (67/85)\nUpdating files:  80% (68/85)\nUpdating files:  81% (69/85)\nUpdating files:  82% (70/85)\nUpdating files:  83% (71/85)\nUpdating files:  84% (72/85)\nUpdating files:  85% (73/85)\nUpdating files:  87% (74/85)\nUpdating files:  88% (75/85)\nUpdating files:  89% (76/85)\nUpdating files:  90% (77/85)\nUpdating files:  91% (78/85)\nUpdating files:  92% (79/85)\nUpdating files:  94% (80/85)\nUpdating files:  95% (81/85)\nUpdating files:  96% (82/85)\nUpdating files:  97% (83/85)\nUpdating files:  98% (84/85)\nUpdating files: 100% (85/85)\nUpdating files: 100% (85/85), done.\n",
+    "sha": "f2c0502de6674a5667b72f12e081d30e9d696847",
+    "commit_date": "2026-09-02T19:17:24Z"
+  },
+  {
+    "repo": "autoneg/hani",
+    "directory": "hani",
+    "clone_ok": true,
+    "log": "ng files:  73% (119/162)\nUpdating files:  74% (120/162)\nUpdating files:  75% (122/162)\nUpdating files:  76% (124/162)\nUpdating files:  77% (125/162)\nUpdating files:  78% (127/162)\nUpdating files:  79% (128/162)\nUpdating files:  80% (130/162)\nUpdating files:  81% (132/162)\nUpdating files:  82% (133/162)\nUpdating files:  83% (135/162)\nUpdating files:  84% (137/162)\nUpdating files:  85% (138/162)\nUpdating files:  86% (140/162)\nUpdating files:  87% (141/162)\nUpdating files:  88% (143/162)\nUpdating files:  89% (145/162)\nUpdating files:  90% (146/162)\nUpdating files:  91% (148/162)\nUpdating files:  92% (150/162)\nUpdating files:  93% (151/162)\nUpdating files:  94% (153/162)\nUpdating files:  95% (154/162)\nUpdating files:  96% (156/162)\nUpdating files:  97% (158/162)\nUpdating files:  98% (159/162)\nUpdating files:  99% (161/162)\nUpdating files: 100% (162/162)\nUpdating files: 100% (162/162), done.\n",
+    "sha": "616202eaacaf557cc8cc083b6794a77775a1edd8",
+    "commit_date": "2026-07-16T17:26:46+09:00"
+  },
+  {
+    "repo": "JuntoAI/JuntoAI-A2A",
+    "directory": "JuntoAI-A2A",
+    "clone_ok": true,
+    "log": "ng files:  73% (559/765)\nUpdating files:  74% (567/765)\nUpdating files:  75% (574/765)\nUpdating files:  76% (582/765)\nUpdating files:  77% (590/765)\nUpdating files:  78% (597/765)\nUpdating files:  79% (605/765)\nUpdating files:  80% (612/765)\nUpdating files:  81% (620/765)\nUpdating files:  82% (628/765)\nUpdating files:  83% (635/765)\nUpdating files:  84% (643/765)\nUpdating files:  85% (651/765)\nUpdating files:  86% (658/765)\nUpdating files:  87% (666/765)\nUpdating files:  88% (674/765)\nUpdating files:  89% (681/765)\nUpdating files:  90% (689/765)\nUpdating files:  91% (697/765)\nUpdating files:  92% (704/765)\nUpdating files:  93% (712/765)\nUpdating files:  94% (720/765)\nUpdating files:  95% (727/765)\nUpdating files:  96% (735/765)\nUpdating files:  97% (743/765)\nUpdating files:  98% (750/765)\nUpdating files:  99% (758/765)\nUpdating files: 100% (765/765)\nUpdating files: 100% (765/765), done.\n",
+    "sha": "08e7a7cdedc6c46248b57fb24bf75ae1e992561f",
+    "commit_date": "2026-08-19T20:13:39+01:00"
+  },
+  {
+    "repo": "chrisroge/agent-rendezvous",
+    "directory": "agent-rendezvous",
+    "clone_ok": true,
+    "log": "ng files:  59% (42/71)\nUpdating files:  60% (43/71)\nUpdating files:  61% (44/71)\nUpdating files:  63% (45/71)\nUpdating files:  64% (46/71)\nUpdating files:  66% (47/71)\nUpdating files:  67% (48/71)\nUpdating files:  69% (49/71)\nUpdating files:  70% (50/71)\nUpdating files:  71% (51/71)\nUpdating files:  73% (52/71)\nUpdating files:  74% (53/71)\nUpdating files:  76% (54/71)\nUpdating files:  77% (55/71)\nUpdating files:  78% (56/71)\nUpdating files:  80% (57/71)\nUpdating files:  81% (58/71)\nUpdating files:  83% (59/71)\nUpdating files:  84% (60/71)\nUpdating files:  85% (61/71)\nUpdating files:  87% (62/71)\nUpdating files:  88% (63/71)\nUpdating files:  90% (64/71)\nUpdating files:  91% (65/71)\nUpdating files:  92% (66/71)\nUpdating files:  94% (67/71)\nUpdating files:  95% (68/71)\nUpdating files:  97% (69/71)\nUpdating files:  98% (70/71)\nUpdating files: 100% (71/71)\nUpdating files: 100% (71/71), done.\n",
+    "sha": "f158ccc68af2979a7fabf293a8868014ee71b454",
+    "commit_date": "2026-09-02T09:31:08-04:00"
+  },
+  {
+    "repo": "nickzasukhin/ai-agents-p2p",
+    "directory": "ai-agents-p2p",
+    "clone_ok": true,
+    "log": "ng files:  73% (138/189)\nUpdating files:  74% (140/189)\nUpdating files:  75% (142/189)\nUpdating files:  76% (144/189)\nUpdating files:  77% (146/189)\nUpdating files:  78% (148/189)\nUpdating files:  79% (150/189)\nUpdating files:  80% (152/189)\nUpdating files:  81% (154/189)\nUpdating files:  82% (155/189)\nUpdating files:  83% (157/189)\nUpdating files:  84% (159/189)\nUpdating files:  85% (161/189)\nUpdating files:  86% (163/189)\nUpdating files:  87% (165/189)\nUpdating files:  88% (167/189)\nUpdating files:  89% (169/189)\nUpdating files:  90% (171/189)\nUpdating files:  91% (172/189)\nUpdating files:  92% (174/189)\nUpdating files:  93% (176/189)\nUpdating files:  94% (178/189)\nUpdating files:  95% (180/189)\nUpdating files:  96% (182/189)\nUpdating files:  97% (184/189)\nUpdating files:  98% (186/189)\nUpdating files:  99% (188/189)\nUpdating files: 100% (189/189)\nUpdating files: 100% (189/189), done.\n",
+    "sha": "fbd2da4b403fe12f9e90bd566fe667a0c98a8378",
+    "commit_date": "2026-03-15T21:44:59+06:00"
+  },
+  {
+    "repo": "a2aproject/A2A",
+    "directory": "A2A",
+    "clone_ok": true,
+    "log": "ng files:  73% (104/142)\nUpdating files:  74% (106/142)\nUpdating files:  75% (107/142)\nUpdating files:  76% (108/142)\nUpdating files:  77% (110/142)\nUpdating files:  78% (111/142)\nUpdating files:  79% (113/142)\nUpdating files:  80% (114/142)\nUpdating files:  81% (116/142)\nUpdating files:  82% (117/142)\nUpdating files:  83% (118/142)\nUpdating files:  84% (120/142)\nUpdating files:  85% (121/142)\nUpdating files:  86% (123/142)\nUpdating files:  87% (124/142)\nUpdating files:  88% (125/142)\nUpdating files:  89% (127/142)\nUpdating files:  90% (128/142)\nUpdating files:  91% (130/142)\nUpdating files:  92% (131/142)\nUpdating files:  93% (133/142)\nUpdating files:  94% (134/142)\nUpdating files:  95% (135/142)\nUpdating files:  96% (137/142)\nUpdating files:  97% (138/142)\nUpdating files:  98% (140/142)\nUpdating files:  99% (141/142)\nUpdating files: 100% (142/142)\nUpdating files: 100% (142/142), done.\n",
+    "sha": "1205f45951ca97c209634ce6046180e38c5dfb30",
+    "commit_date": "2026-10-15T21:14:54+02:00"
+  },
+  {
+    "repo": "a2aproject/a2a-js",
+    "directory": "a2a-js",
+    "clone_ok": true,
+    "log": "ng files:  73% (252/344)\nUpdating files:  74% (255/344)\nUpdating files:  75% (258/344)\nUpdating files:  76% (262/344)\nUpdating files:  77% (265/344)\nUpdating files:  78% (269/344)\nUpdating files:  79% (272/344)\nUpdating files:  80% (276/344)\nUpdating files:  81% (279/344)\nUpdating files:  82% (283/344)\nUpdating files:  83% (286/344)\nUpdating files:  84% (289/344)\nUpdating files:  85% (293/344)\nUpdating files:  86% (296/344)\nUpdating files:  87% (300/344)\nUpdating files:  88% (303/344)\nUpdating files:  89% (307/344)\nUpdating files:  90% (310/344)\nUpdating files:  91% (314/344)\nUpdating files:  92% (317/344)\nUpdating files:  93% (320/344)\nUpdating files:  94% (324/344)\nUpdating files:  95% (327/344)\nUpdating files:  96% (331/344)\nUpdating files:  97% (334/344)\nUpdating files:  98% (338/344)\nUpdating files:  99% (341/344)\nUpdating files: 100% (344/344)\nUpdating files: 100% (344/344), done.\n",
+    "sha": "10f89379274bf72575a9ab83c1aaa52e5378e9c6",
+    "commit_date": "2026-10-15T14:08:33+02:00"
+  },
+  {
+    "repo": "a2aproject/a2a-samples",
+    "directory": "a2a-samples",
+    "clone_ok": true,
+    "log": "ng files:  73% (633/866)\nUpdating files:  74% (641/866)\nUpdating files:  75% (650/866)\nUpdating files:  76% (659/866)\nUpdating files:  77% (667/866)\nUpdating files:  78% (676/866)\nUpdating files:  79% (685/866)\nUpdating files:  80% (693/866)\nUpdating files:  81% (702/866)\nUpdating files:  82% (711/866)\nUpdating files:  83% (719/866)\nUpdating files:  84% (728/866)\nUpdating files:  85% (737/866)\nUpdating files:  86% (745/866)\nUpdating files:  87% (754/866)\nUpdating files:  88% (763/866)\nUpdating files:  89% (771/866)\nUpdating files:  90% (780/866)\nUpdating files:  91% (789/866)\nUpdating files:  92% (797/866)\nUpdating files:  93% (806/866)\nUpdating files:  94% (815/866)\nUpdating files:  95% (823/866)\nUpdating files:  96% (832/866)\nUpdating files:  97% (841/866)\nUpdating files:  98% (849/866)\nUpdating files:  99% (858/866)\nUpdating files: 100% (866/866)\nUpdating files: 100% (866/866), done.\n",
+    "sha": "6603ba3f2c31a7ef33e70b9d8b5b5f8be42ac9a3",
+    "commit_date": "2026-08-04T20:01:07+02:00"
+  },
+  {
+    "repo": "a2aproject/a2a-python",
+    "directory": "a2a-python",
+    "clone_ok": true,
+    "log": "ng files:  73% (265/362)\nUpdating files:  74% (268/362)\nUpdating files:  75% (272/362)\nUpdating files:  76% (276/362)\nUpdating files:  77% (279/362)\nUpdating files:  78% (283/362)\nUpdating files:  79% (286/362)\nUpdating files:  80% (290/362)\nUpdating files:  81% (294/362)\nUpdating files:  82% (297/362)\nUpdating files:  83% (301/362)\nUpdating files:  84% (305/362)\nUpdating files:  85% (308/362)\nUpdating files:  86% (312/362)\nUpdating files:  87% (315/362)\nUpdating files:  88% (319/362)\nUpdating files:  89% (323/362)\nUpdating files:  90% (326/362)\nUpdating files:  91% (330/362)\nUpdating files:  92% (334/362)\nUpdating files:  93% (337/362)\nUpdating files:  94% (341/362)\nUpdating files:  95% (344/362)\nUpdating files:  96% (348/362)\nUpdating files:  97% (352/362)\nUpdating files:  98% (355/362)\nUpdating files:  99% (359/362)\nUpdating files: 100% (362/362)\nUpdating files: 100% (362/362), done.\n",
+    "sha": "a4c4fc91a22778f3d805e5e592bf690915a33033",
+    "commit_date": "2026-10-14T15:33:20+02:00"
+  },
+  {
+    "repo": "langchain-ai/agent-protocol",
+    "directory": "agent-protocol",
+    "clone_ok": true,
+    "log": "Cloning into 'agent-protocol'...\n",
+    "sha": "440a86ba097b4bc41e8da007b24e419ec07a3e35",
+    "commit_date": "2026-10-12T18:16:23+01:00"
+  },
+  {
+    "repo": "langchain-ai/langgraph",
+    "directory": "langgraph",
+    "clone_ok": true,
+    "log": "ng files:  73% (505/691)\nUpdating files:  74% (512/691)\nUpdating files:  75% (519/691)\nUpdating files:  76% (526/691)\nUpdating files:  77% (533/691)\nUpdating files:  78% (539/691)\nUpdating files:  79% (546/691)\nUpdating files:  80% (553/691)\nUpdating files:  81% (560/691)\nUpdating files:  82% (567/691)\nUpdating files:  83% (574/691)\nUpdating files:  84% (581/691)\nUpdating files:  85% (588/691)\nUpdating files:  86% (595/691)\nUpdating files:  87% (602/691)\nUpdating files:  88% (609/691)\nUpdating files:  89% (615/691)\nUpdating files:  90% (622/691)\nUpdating files:  91% (629/691)\nUpdating files:  92% (636/691)\nUpdating files:  93% (643/691)\nUpdating files:  94% (650/691)\nUpdating files:  95% (657/691)\nUpdating files:  96% (664/691)\nUpdating files:  97% (671/691)\nUpdating files:  98% (678/691)\nUpdating files:  99% (685/691)\nUpdating files: 100% (691/691)\nUpdating files: 100% (691/691), done.\n",
+    "sha": "e77a5cb08c1f3ff306d997dd76fc7169afdab5ea",
+    "commit_date": "2026-10-15T16:14:01-04:00"
+  },
+  {
+    "repo": "agi-inc/agent-protocol",
+    "directory": "agi-agent-protocol",
+    "clone_ok": true,
+    "log": "ng files:  73% (154/210)\nUpdating files:  74% (156/210)\nUpdating files:  75% (158/210)\nUpdating files:  76% (160/210)\nUpdating files:  77% (162/210)\nUpdating files:  78% (164/210)\nUpdating files:  79% (166/210)\nUpdating files:  80% (168/210)\nUpdating files:  81% (171/210)\nUpdating files:  82% (173/210)\nUpdating files:  83% (175/210)\nUpdating files:  84% (177/210)\nUpdating files:  85% (179/210)\nUpdating files:  86% (181/210)\nUpdating files:  87% (183/210)\nUpdating files:  88% (185/210)\nUpdating files:  89% (187/210)\nUpdating files:  90% (189/210)\nUpdating files:  91% (192/210)\nUpdating files:  92% (194/210)\nUpdating files:  93% (196/210)\nUpdating files:  94% (198/210)\nUpdating files:  95% (200/210)\nUpdating files:  96% (202/210)\nUpdating files:  97% (204/210)\nUpdating files:  98% (206/210)\nUpdating files:  99% (208/210)\nUpdating files: 100% (210/210)\nUpdating files: 100% (210/210), done.\n",
+    "sha": "5047199152dc6e1ba83320b1b59f94af24046dcf",
+    "commit_date": "2025-04-07T23:10:21-07:00"
+  },
+  {
+    "repo": "jessastrid/matchclaws",
+    "directory": "matchclaws",
+    "clone_ok": true,
+    "log": "Cloning into 'matchclaws'...\nUpdating files:  40% (2/5)\nUpdating files:  60% (3/5)\nUpdating files:  80% (4/5)\nUpdating files: 100% (5/5)\nUpdating files: 100% (5/5), done.\n",
+    "sha": "6621edc82df7d246680a0480aaf41be8aa52a40c",
+    "commit_date": "2026-10-04T12:34:51+08:00"
+  },
+  {
+    "repo": "skorotkiewicz/jupiter",
+    "directory": "jupiter",
+    "clone_ok": true,
+    "log": "pdating files:  14% (5/34)\nUpdating files:  17% (6/34)\nUpdating files:  20% (7/34)\nUpdating files:  23% (8/34)\nUpdating files:  26% (9/34)\nUpdating files:  29% (10/34)\nUpdating files:  32% (11/34)\nUpdating files:  35% (12/34)\nUpdating files:  38% (13/34)\nUpdating files:  41% (14/34)\nUpdating files:  44% (15/34)\nUpdating files:  47% (16/34)\nUpdating files:  50% (17/34)\nUpdating files:  52% (18/34)\nUpdating files:  55% (19/34)\nUpdating files:  58% (20/34)\nUpdating files:  61% (21/34)\nUpdating files:  64% (22/34)\nUpdating files:  67% (23/34)\nUpdating files:  70% (24/34)\nUpdating files:  73% (25/34)\nUpdating files:  76% (26/34)\nUpdating files:  79% (27/34)\nUpdating files:  82% (28/34)\nUpdating files:  85% (29/34)\nUpdating files:  88% (30/34)\nUpdating files:  91% (31/34)\nUpdating files:  94% (32/34)\nUpdating files:  97% (33/34)\nUpdating files: 100% (34/34)\nUpdating files: 100% (34/34), done.\n",
+    "sha": "eca289d4a1e7e9a3cf4d38fb6f827a57fc85aa98",
+    "commit_date": "2026-02-11T09:32:42+01:00"
+  },
+  {
+    "repo": "langchain-ai/langgraphjs",
+    "directory": "langgraphjs",
+    "clone_ok": true,
+    "log": ")\nUpdating files:  75% (1506/2007)\nUpdating files:  76% (1526/2007)\nUpdating files:  77% (1546/2007)\nUpdating files:  78% (1566/2007)\nUpdating files:  79% (1586/2007)\nUpdating files:  80% (1606/2007)\nUpdating files:  81% (1626/2007)\nUpdating files:  82% (1646/2007)\nUpdating files:  83% (1666/2007)\nUpdating files:  84% (1686/2007)\nUpdating files:  85% (1706/2007)\nUpdating files:  86% (1727/2007)\nUpdating files:  87% (1747/2007)\nUpdating files:  88% (1767/2007)\nUpdating files:  89% (1787/2007)\nUpdating files:  90% (1807/2007)\nUpdating files:  91% (1827/2007)\nUpdating files:  92% (1847/2007)\nUpdating files:  93% (1867/2007)\nUpdating files:  94% (1887/2007)\nUpdating files:  95% (1907/2007)\nUpdating files:  96% (1927/2007)\nUpdating files:  97% (1947/2007)\nUpdating files:  98% (1967/2007)\nUpdating files:  99% (1987/2007)\nUpdating files: 100% (2007/2007)\nUpdating files: 100% (2007/2007), done.\n",
+    "sha": "61807113665e4875c6ec8fd34c6f6c9f7becf497",
+    "commit_date": "2026-10-15T16:20:10-04:00"
+  },
+  {
+    "repo": "geeks-accelerator/in-bed-ai",
+    "directory": "in-bed-ai",
+    "clone_ok": true,
+    "log": "ng files:  73% (322/440)\nUpdating files:  74% (326/440)\nUpdating files:  75% (330/440)\nUpdating files:  76% (335/440)\nUpdating files:  77% (339/440)\nUpdating files:  78% (344/440)\nUpdating files:  79% (348/440)\nUpdating files:  80% (352/440)\nUpdating files:  81% (357/440)\nUpdating files:  82% (361/440)\nUpdating files:  83% (366/440)\nUpdating files:  84% (370/440)\nUpdating files:  85% (374/440)\nUpdating files:  86% (379/440)\nUpdating files:  87% (383/440)\nUpdating files:  88% (388/440)\nUpdating files:  89% (392/440)\nUpdating files:  90% (396/440)\nUpdating files:  91% (401/440)\nUpdating files:  92% (405/440)\nUpdating files:  93% (410/440)\nUpdating files:  94% (414/440)\nUpdating files:  95% (418/440)\nUpdating files:  96% (423/440)\nUpdating files:  97% (427/440)\nUpdating files:  98% (432/440)\nUpdating files:  99% (436/440)\nUpdating files: 100% (440/440)\nUpdating files: 100% (440/440), done.\n",
+    "sha": "ddc67fd347589dfa0b3282e0cee8a25667a8e39b",
+    "commit_date": "2026-10-05T23:02:13-03:00"
+  },
+  {
+    "repo": "TaichiHiromatsu/secure-ai-agent-matching-platform",
+    "directory": "secure-ai-agent-matching-platform",
+    "clone_ok": true,
+    "log": "ng files:  73% (245/335)\nUpdating files:  74% (248/335)\nUpdating files:  75% (252/335)\nUpdating files:  76% (255/335)\nUpdating files:  77% (258/335)\nUpdating files:  78% (262/335)\nUpdating files:  79% (265/335)\nUpdating files:  80% (268/335)\nUpdating files:  81% (272/335)\nUpdating files:  82% (275/335)\nUpdating files:  83% (279/335)\nUpdating files:  84% (282/335)\nUpdating files:  85% (285/335)\nUpdating files:  86% (289/335)\nUpdating files:  87% (292/335)\nUpdating files:  88% (295/335)\nUpdating files:  89% (299/335)\nUpdating files:  90% (302/335)\nUpdating files:  91% (305/335)\nUpdating files:  92% (309/335)\nUpdating files:  93% (312/335)\nUpdating files:  94% (315/335)\nUpdating files:  95% (319/335)\nUpdating files:  96% (322/335)\nUpdating files:  97% (325/335)\nUpdating files:  98% (329/335)\nUpdating files:  99% (332/335)\nUpdating files: 100% (335/335)\nUpdating files: 100% (335/335), done.\n",
+    "sha": "2263ba25a72cf14a16bbcc8234053e4926fdd139",
+    "commit_date": "2026-09-01T03:46:47+09:00"
+  },
+  {
+    "repo": "musnom/Trialmatch.ai",
+    "directory": "Trialmatch.ai",
+    "clone_ok": true,
+    "log": "(82/113)\nUpdating files:  73% (83/113)\nUpdating files:  74% (84/113)\nUpdating files:  75% (85/113)\nUpdating files:  76% (86/113)\nUpdating files:  77% (88/113)\nUpdating files:  78% (89/113)\nUpdating files:  79% (90/113)\nUpdating files:  80% (91/113)\nUpdating files:  81% (92/113)\nUpdating files:  82% (93/113)\nUpdating files:  83% (94/113)\nUpdating files:  84% (95/113)\nUpdating files:  85% (97/113)\nUpdating files:  86% (98/113)\nUpdating files:  87% (99/113)\nUpdating files:  88% (100/113)\nUpdating files:  89% (101/113)\nUpdating files:  90% (102/113)\nUpdating files:  91% (103/113)\nUpdating files:  92% (104/113)\nUpdating files:  93% (106/113)\nUpdating files:  94% (107/113)\nUpdating files:  95% (108/113)\nUpdating files:  96% (109/113)\nUpdating files:  97% (110/113)\nUpdating files:  98% (111/113)\nUpdating files:  99% (112/113)\nUpdating files: 100% (113/113)\nUpdating files: 100% (113/113), done.\n",
+    "sha": "4bb137cf795746b4160a4b10ef004a1b2ad6d4c5",
+    "commit_date": "2025-10-30T13:21:31-07:00"
+  },
+  {
+    "repo": "tjamescouch/agentchat",
+    "directory": "agentchat",
+    "clone_ok": true,
+    "log": "ng files:  73% (149/203)\nUpdating files:  74% (151/203)\nUpdating files:  75% (153/203)\nUpdating files:  76% (155/203)\nUpdating files:  77% (157/203)\nUpdating files:  78% (159/203)\nUpdating files:  79% (161/203)\nUpdating files:  80% (163/203)\nUpdating files:  81% (165/203)\nUpdating files:  82% (167/203)\nUpdating files:  83% (169/203)\nUpdating files:  84% (171/203)\nUpdating files:  85% (173/203)\nUpdating files:  86% (175/203)\nUpdating files:  87% (177/203)\nUpdating files:  88% (179/203)\nUpdating files:  89% (181/203)\nUpdating files:  90% (183/203)\nUpdating files:  91% (185/203)\nUpdating files:  92% (187/203)\nUpdating files:  93% (189/203)\nUpdating files:  94% (191/203)\nUpdating files:  95% (193/203)\nUpdating files:  96% (195/203)\nUpdating files:  97% (197/203)\nUpdating files:  98% (199/203)\nUpdating files:  99% (201/203)\nUpdating files: 100% (203/203)\nUpdating files: 100% (203/203), done.\n",
+    "sha": "f845e472a95fd33fc762fbc68fd5f671a5658b57",
+    "commit_date": "2026-03-06T20:40:27-07:00"
+  },
+  {
+    "repo": "pasqualeleonardolazzaro/PROXAI",
+    "directory": "PROXAI",
+    "clone_ok": true,
+    "log": "ng files:  73% (109/149)\nUpdating files:  74% (111/149)\nUpdating files:  75% (112/149)\nUpdating files:  76% (114/149)\nUpdating files:  77% (115/149)\nUpdating files:  78% (117/149)\nUpdating files:  79% (118/149)\nUpdating files:  80% (120/149)\nUpdating files:  81% (121/149)\nUpdating files:  82% (123/149)\nUpdating files:  83% (124/149)\nUpdating files:  84% (126/149)\nUpdating files:  85% (127/149)\nUpdating files:  86% (129/149)\nUpdating files:  87% (130/149)\nUpdating files:  88% (132/149)\nUpdating files:  89% (133/149)\nUpdating files:  90% (135/149)\nUpdating files:  91% (136/149)\nUpdating files:  92% (138/149)\nUpdating files:  93% (139/149)\nUpdating files:  94% (141/149)\nUpdating files:  95% (142/149)\nUpdating files:  96% (144/149)\nUpdating files:  97% (145/149)\nUpdating files:  98% (147/149)\nUpdating files:  99% (148/149)\nUpdating files: 100% (149/149)\nUpdating files: 100% (149/149), done.\n",
+    "sha": "ae07c7f3bbf3830293149643f1e357404851ea22",
+    "commit_date": "2026-08-28T18:52:23+02:00"
+  },
+  {
+    "repo": "openclaw/openclaw",
+    "directory": "openclaw",
+    "clone_ok": true,
+    "log": "78% (43925/56314)\nUpdating files:  79% (44489/56314)\nUpdating files:  80% (45052/56314)\nUpdating files:  81% (45615/56314)\nUpdating files:  81% (45837/56314)\nUpdating files:  82% (46178/56314)\nUpdating files:  83% (46741/56314)\nUpdating files:  84% (47304/56314)\nUpdating files:  85% (47867/56314)\nUpdating files:  86% (48431/56314)\nUpdating files:  87% (48994/56314)\nUpdating files:  88% (49557/56314)\nUpdating files:  89% (50120/56314)\nUpdating files:  90% (50683/56314)\nUpdating files:  91% (51246/56314)\nUpdating files:  92% (51809/56314)\nUpdating files:  93% (52373/56314)\nUpdating files:  93% (52918/56314)\nUpdating files:  94% (52936/56314)\nUpdating files:  95% (53499/56314)\nUpdating files:  96% (54062/56314)\nUpdating files:  97% (54625/56314)\nUpdating files:  98% (55188/56314)\nUpdating files:  99% (55751/56314)\nUpdating files: 100% (56314/56314)\nUpdating files: 100% (56314/56314), done.\n",
+    "sha": "18044d5bb00baa7a4cbc12236095a5524b98ee27",
+    "commit_date": "2026-10-15T19:35:15-07:00"
+  }
+]

@@ -8,16 +8,65 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python 3.10+">
-  <img src="https://img.shields.io/badge/core%20dependencies-0-brightgreen" alt="Zero dependencies">
-  <img src="https://img.shields.io/badge/scenario-dating-ff4d5e" alt="Scenario: dating">
+  <img src="https://img.shields.io/badge/python-3.12%2B-blue" alt="Python 3.12+">
+  <img src="https://img.shields.io/badge/transport-peer%20HTTP-brightgreen" alt="Peer-to-peer HTTP">
+  <img src="https://img.shields.io/badge/scenarios-cofounder%20%7C%20venue-ff4d5e" alt="Scenarios: cofounder and venue">
   <img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT License">
   <img src="https://img.shields.io/badge/built%20at-Zhangjiang%20Alumni%20Hackathon%202026-e8b34b" alt="Hackathon">
 </p>
 
-🔥 Built in 48 hours at the Zhangjiang Alumni Hackathon (Oct 16–17, 2026). One engine for dating, friendship, job matching, and cofounder matching — this repo ships the dating scenario end to end.
+Built for the Zhangjiang Alumni Hackathon (Oct 16–17, 2026). Agents talk first, ask their owners when information is missing, and resume the same conversation. Cofounder matching is the main demo; venue matching demonstrates reuse of the same negotiation core.
 
 ---
+
+## 当前 MVP：四个独立 Agent 的 TUI（2026-10-16）
+
+四个相同应用分别监听 8011–8014，通过点对点 HTTP 协商；每个应用有自己的画像、SQLite、问题卡和批准入口。粗筛 → 向本人补问 → 原会话恢复 → 双方批准 → 一致结果卡。合伙人为主场景，场地配置验证可移植性。
+
+```bash
+uv sync --group dev
+# 先安装并登录本机 Codex CLI；每个终端各运行一条，编号替换为 1、2、3、4：
+uv run python scripts/run_agent.py --config configs/mvp/agent-1.json --mode codex
+# 自动四进程验收，使用临时端口与数据库：
+uv run python scripts/smoke_mvp.py
+```
+
+[完整启动、演示脚本、模型配置与边界](docs/implementation/mvp/README.md)。`--mode codex` 使用本机已登录 Codex CLI，默认 `gpt-6-luna / low`，已完成真实四进程验收；也支持 HTTP 模型适配器。不指定模式时使用确定性策略，可离线验证通信与状态机。
+
+窗口顶部显示用户名片，主体展示 Agent 交流；需要用户补充时才显示问题和输入框，按 Enter 提交。模型模式下所有回答均由模型理解，不确定时继续补问。最终双方仍需明确批准方案。持久化会话保存在 `.local/`，不会提交到 Git。本轮协议为项目自有 HTTP JSON，不宣称标准 A2A 兼容。
+
+### 代码与资料入口
+
+| 路径 | 用途 |
+|---|---|
+| `src/xagent/mvp/` | 通用协商内核、HTTP、模型适配、SQLite 与 TUI |
+| `configs/mvp/` | 四个合成用户画像及合伙人/场地场景配置 |
+| `scripts/run_agent.py` | 启动单个独立 Agent |
+| `scripts/smoke_mvp.py` | 临时端口/数据库上的四进程验收 |
+| `tests/test_mvp_*.py` | 内核、模型边界、TUI 与跨进程回归测试 |
+| `docs/implementation/mvp/` | 当前实现、启动指南与验收记录 |
+| `docs/research/`、`docs/superpowers/` | 调研证据、设计与实施计划 |
+| `web/`、`src/xagent/api.py` | 早期确定性工作台，独立于当前 TUI |
+| `core/`、`demo/`、`scenarios/` | 原仓库匹配与画像蒸馏原型 |
+
+验证：`uv run pytest -q`。不消耗真实模型额度；真实模型验收需显式执行 `uv run python scripts/smoke_mvp.py --mode codex`。以下保留先前里程碑与原仓库说明。
+
+## Day 1：确定性协商工作台（2026-10-16）
+
+本轮新增的创业合伙人原型位于 `src/xagent/` 和 `web/`。使用 Python 3.12+ 与 uv：
+
+```bash
+uv run python scripts/dev.py
+```
+
+打开 <http://127.0.0.1:8000/?mode=api>；纯样例交互使用 <http://127.0.0.1:8000/?mode=sample>。
+选择林澈身份发起协商 → 回答加入时间问题 → 林澈确认提案 → 切换陈予确认 → 查看结果。
+回答仅更新当前会话；刷新和服务重启后可恢复 SQLite 中的协商。
+
+这是本地确定性、合成身份演示，尚未接入实时模型或跨进程 A2A。
+本节以下为仓库原有说明；旧版 demo 与本工作台分别运行。
+验证命令：`uv run --group dev pytest -q`，服务运行后执行 `uv run python scripts/smoke.py`。
+详见 [协作进度](docs/implementation/day1/progress.md)、[验收记录](docs/implementation/day1/acceptance.md) 与 [调研及后续计划](docs/research/2026-10-16/README.md)。
 
 ## About
 

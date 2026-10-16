@@ -1,0 +1,185 @@
+{
+  "demo": {
+    "scenario": {
+      "id": "cofounder.v1",
+      "name": "创业合伙人"
+    },
+    "profiles": [
+      {
+        "owner_id": "owner-a",
+        "agent_id": "agent-a",
+        "name": "林澈",
+        "role": "技术创始人",
+        "summary": "寻找产品与商业合伙人；每周投入至少 15 小时。",
+        "facts": [
+          {
+            "field": "focus",
+            "label": "当前方向",
+            "value": "AI 产品创业",
+            "source": "owner-provided",
+            "visibility": "public"
+          },
+          {
+            "field": "hours_per_week",
+            "label": "每周投入要求",
+            "value": 15,
+            "source": "owner-provided",
+            "visibility": "public"
+          }
+        ],
+        "requirements": [
+          {
+            "field": "hours_per_week",
+            "label": "每周投入",
+            "kind": "hard",
+            "operator": ">=",
+            "value": 15
+          },
+          {
+            "field": "start_in_days",
+            "label": "全职加入时间",
+            "kind": "ask",
+            "operator": "confirm",
+            "value": 90
+          }
+        ],
+        "version": 1
+      },
+      {
+        "owner_id": "owner-b",
+        "agent_id": "agent-b",
+        "name": "陈予",
+        "role": "产品负责人",
+        "summary": "有自述的 AI 产品经验；可每周投入 15 小时，90 天后全职加入，提议先试合作 14 天。",
+        "facts": [
+          {
+            "field": "ai_product_experience",
+            "label": "AI 产品经验",
+            "value": true,
+            "source": "self-reported",
+            "visibility": "public"
+          },
+          {
+            "field": "hours_per_week",
+            "label": "每周投入",
+            "value": 15,
+            "source": "self-reported",
+            "visibility": "public"
+          },
+          {
+            "field": "full_time_after_days",
+            "label": "全职加入时间",
+            "value": 90,
+            "source": "self-reported",
+            "visibility": "public"
+          },
+          {
+            "field": "trial_days",
+            "label": "试合作",
+            "value": 14,
+            "source": "self-reported",
+            "visibility": "public"
+          }
+        ],
+        "requirements": [],
+        "version": 1
+      }
+    ],
+    "candidates": [
+      {
+        "agent_id": "agent-b",
+        "name": "陈予",
+        "role": "产品负责人",
+        "summary": "每周 15 小时，90 天后全职，先试合作 14 天。",
+        "eligible": true,
+        "reason": "满足每周投入至少 15 小时的硬性要求。"
+      },
+      {
+        "agent_id": "agent-c",
+        "name": "候选人 C",
+        "role": "潜在合伙人",
+        "summary": "每周可投入 2 小时。",
+        "eligible": false,
+        "reason": "每周投入 2 小时，低于 15 小时的硬性要求。"
+      }
+    ]
+  },
+  "waiting_session": {
+    "session_id": "sample-session",
+    "scenario_id": "cofounder.v1",
+    "candidate_agent_id": "agent-b",
+    "mode": "deterministic",
+    "state": "WAITING_INPUT",
+    "revision": 2,
+    "profile_versions": {
+      "owner-a": 1,
+      "owner-b": 1
+    },
+    "rounds": 1,
+    "terms": {
+      "start_in_days": 90,
+      "hours_per_week": 15,
+      "trial_days": 14,
+      "requires_ai_experience": false,
+      "ai_product_experience": true
+    },
+    "proposal": null,
+    "pending_question": {
+      "question_id": "start-in-days",
+      "owner_id": "owner-a",
+      "field": "start_in_days",
+      "title": "是否接受 90 天后全职加入？",
+      "reason": "陈予希望先进行 14 天试合作，且计划 90 天后全职加入。",
+      "options": [
+        {
+          "value": "accept_90_days",
+          "label": "接受 90 天后全职"
+        },
+        {
+          "value": "require_ai_experience",
+          "label": "接受 90 天，但要求 AI 产品经验"
+        },
+        {
+          "value": "decline",
+          "label": "不继续"
+        }
+      ],
+      "scope": "session",
+      "base_revision": 2
+    },
+    "approvals": [],
+    "events": [
+      {
+        "seq": 1,
+        "session_id": "sample-session",
+        "timestamp": "2026-10-16T02:00:00Z",
+        "actor": "agent-a",
+        "type": "OPEN",
+        "public_summary": "林澈的代理提出合作方向：寻找每周至少投入 15 小时的产品与商业合伙人。",
+        "payload": {},
+        "mode": "deterministic"
+      },
+      {
+        "seq": 2,
+        "session_id": "sample-session",
+        "timestamp": "2026-10-16T02:00:02Z",
+        "actor": "agent-b",
+        "type": "COUNTER",
+        "public_summary": "陈予的代理回应：每周可投入 15 小时，希望先试合作 14 天，90 天后全职加入。",
+        "payload": {},
+        "mode": "deterministic"
+      },
+      {
+        "seq": 3,
+        "session_id": "sample-session",
+        "timestamp": "2026-10-16T02:00:03Z",
+        "actor": "system",
+        "type": "WAITING_INPUT",
+        "public_summary": "加入时间需要林澈确认；协商已暂停，等待本人回答。",
+        "payload": {},
+        "mode": "deterministic"
+      }
+    ],
+    "artifact": null
+  }
+}

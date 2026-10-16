@@ -1,5 +1,16 @@
 __pycache__/
 *.pyc
 .env
+.env.*
+!.env.example
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite3-shm
+*.sqlite3-wal
 demo/demo_data.json
 .DS_Store
+.local/
+.venv/
+.pytest_cache/

@@ -1,0 +1,13 @@
+
+> @agentpair/protocol@0.5.5 build /Users/MacBook/projects/2026_10_17_hackathon/agent-pair-protocol/packages/protocol
+> pnpm build:wasm && tsc -p tsconfig.build.json && mkdir -p dist/wasm && cp -R wasm/pkg dist/wasm/ && rm -f dist/wasm/pkg/.gitignore
+
+
+> @agentpair/protocol@0.5.5 build:wasm /Users/MacBook/projects/2026_10_17_hackathon/agent-pair-protocol/packages/protocol
+> cd wasm/spake2-pake && wasm-pack build --target nodejs --out-dir ../pkg --out-name spake2_pake
+
+sh: wasm-pack: command not found
+ ELIFECYCLE  Command failed.
+/Users/MacBook/projects/2026_10_17_hackathon/agent-pair-protocol/packages/protocol:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @agentpair/protocol@0.5.5 build: `pnpm build:wasm && tsc -p tsconfig.build.json && mkdir -p dist/wasm && cp -R wasm/pkg dist/wasm/ && rm -f dist/wasm/pkg/.gitignore`
+Exit status 1

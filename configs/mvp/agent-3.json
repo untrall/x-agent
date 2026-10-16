@@ -1,0 +1,44 @@
+{
+  "agent_id": "agent-3",
+  "owner_id": "owner-3",
+  "name": "陈予",
+  "host": "127.0.0.1",
+  "port": 8013,
+  "database": "../../.local/mvp/agent-3.sqlite3",
+  "token": "demo-token-3",
+  "scenario": "cofounder.json",
+  "profile": {
+    "facts": {
+      "weekly_hours": 20
+    },
+    "public_fields": [
+      "weekly_hours",
+      "ai_product_experience"
+    ],
+    "tags": [
+      "产品合伙人"
+    ],
+    "description": "产品合伙人候选。"
+  },
+  "peers": [
+    {
+      "agent_id": "agent-1",
+      "name": "林澈",
+      "url": "http://127.0.0.1:8011",
+      "token": "demo-token-1"
+    },
+    {
+      "agent_id": "agent-2",
+      "name": "周然",
+      "url": "http://127.0.0.1:8012",
+      "token": "demo-token-2"
+    },
+    {
+      "agent_id": "agent-4",
+      "name": "苏禾",
+      "url": "http://127.0.0.1:8014",
+      "token": "demo-token-4"
+    }
+  ],
+  "owner_token": "demo-owner-3"
+}
