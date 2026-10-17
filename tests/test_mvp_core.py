@@ -392,13 +392,15 @@ def test_free_text_is_not_guessed_by_boolean_substrings(text):
     {'status':'resolved', 'value':'true', 'clarification':None},
 ])
 @pytest.mark.parametrize('text', ['我可以在家参与远程协作', '是'])
-async def test_natural_answer_resumes_only_after_typed_resolution(tmp_path, result, text):
+@pytest.mark.parametrize('separate_interpreter', [False, True])
+async def test_natural_answer_resumes_only_after_typed_resolution(tmp_path, result, text, separate_interpreter):
     class AnswerPolicy(TestPolicy):
         async def interpret_answer(self, text, question, scenario):
             assert question['scope'] == 'session' and question['field'] == 'remote'
             assert text in {'我可以在家参与远程协作', '是'}
             return result
-    runtime = AgentRuntime(config(tmp_path, 'provider-z', ['requester-z']), policy=AnswerPolicy())
+    options = {'policy': TestPolicy(), 'answer_interpreter': AnswerPolicy()} if separate_interpreter else {'policy': AnswerPolicy()}
+    runtime = AgentRuntime(config(tmp_path, 'provider-z', ['requester-z']), **options)
     runtime.receive({'schema_version':1, 'message_id':'m-natural', 'request_id':'r-natural', 'session_id':'s-natural',
         'sender_agent_id':'requester-z', 'recipient_agent_id':'provider-z', 'type':'REQUEST', 'causation_id':None,
         'payload':{'scenario_id':'generic', 'text':'remote', 'requirements':[{'field':'remote','op':'eq','value':True}]}}, 'requester-z')
@@ -425,12 +427,14 @@ async def test_natural_answer_resumes_only_after_typed_resolution(tmp_path, resu
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('required', [True, False])
-async def test_natural_request_answer_changes_requirements_not_owner_memory(tmp_path, required):
+@pytest.mark.parametrize('separate_interpreter', [False, True])
+async def test_natural_request_answer_changes_requirements_not_owner_memory(tmp_path, required, separate_interpreter):
     class AnswerPolicy(TestPolicy):
         async def interpret_answer(self, text, question, scenario):
             assert question['scope'] == 'request'
             return {'status':'resolved','value':required,'clarification':None}
-    runtime = AgentRuntime(config(tmp_path, 'requester'), policy=AnswerPolicy())
+    options = {'policy': TestPolicy(), 'answer_interpreter': AnswerPolicy()} if separate_interpreter else {'policy': AnswerPolicy()}
+    runtime = AgentRuntime(config(tmp_path, 'requester'), **options)
     created = await runtime.broadcast('need hours')
     question = runtime._question({'request_id':created['request_id'], 'session_id':'unused'}, 'remote',
         'request', 'additional_requirements', '远程协作', '是否要求支持远程协作？')

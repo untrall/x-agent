@@ -34,9 +34,9 @@
 - `REQUEST_SENT` Request queued for 陈语桐
 - `REQUEST_RECEIVED` Peer request received
 - `FILTER_RESULT` Local filter PASS
-- `POLICY_DECISION` 是否要求对方对要孩子持开放态度？
-- `POLICY_DECISION` Need to confirm 对要孩子持开放态度
-- `QUESTION` 对要孩子持开放态度
+- `POLICY_DECISION` 进入稳定关系后是否愿意在同一个城市长期生活？
+- `POLICY_DECISION` Need to confirm 进入稳定关系后愿意在同一个城市长期生活
+- `QUESTION` 进入稳定关系后愿意在同一个城市长期生活
 - `FILTER_RESULT` Local filter UNKNOWN
 - `POLICY_DECISION` All stated conditions pass
 - `ANSWER` Owner answered fact question
@@ -57,9 +57,9 @@
 - `REQUEST_SENT` Request queued for 方糖
 - `REQUEST_RECEIVED` Peer request received
 - `FILTER_RESULT` Local filter PASS
-- `POLICY_DECISION` 是否要求对方对要孩子持开放态度？
-- `POLICY_DECISION` Need to confirm 对要孩子持开放态度
-- `QUESTION` 对要孩子持开放态度
+- `POLICY_DECISION` 进入稳定关系后是否愿意在同一个城市长期生活？
+- `POLICY_DECISION` Need to confirm 进入稳定关系后愿意在同一个城市长期生活
+- `QUESTION` 进入稳定关系后愿意在同一个城市长期生活
 - `FILTER_RESULT` Local filter UNKNOWN
 - `POLICY_DECISION` All stated conditions pass
 - `ANSWER` Owner answered fact question
@@ -78,9 +78,9 @@
 - `REQUEST_SENT` Request queued for 林小满
 - `REQUEST_RECEIVED` Peer request received
 - `FILTER_RESULT` Local filter PASS
-- `POLICY_DECISION` 是否要求对方对要孩子持开放态度？
-- `POLICY_DECISION` Need to confirm 对要孩子持开放态度
-- `QUESTION` 对要孩子持开放态度
+- `POLICY_DECISION` 进入稳定关系后是否愿意在同一个城市长期生活？
+- `POLICY_DECISION` Need to confirm 进入稳定关系后愿意在同一个城市长期生活
+- `QUESTION` 进入稳定关系后愿意在同一个城市长期生活
 - `FILTER_RESULT` Local filter UNKNOWN
 - `POLICY_DECISION` All stated conditions pass
 - `ANSWER` Owner answered fact question

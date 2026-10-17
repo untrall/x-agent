@@ -543,7 +543,10 @@ class AgentApp(App):
             else:
                 content = (f"{peer} 那边要求对方「{label}」。我的 Agent 不知道我是不是，\n"
                            f"需要我本人确认：我是否{label}？")
-            field.placeholder = ('用自己的话回答，Enter 提交' if self._snapshot.get('mode') != 'deterministic'
+            natural_answer = self._snapshot.get('mode') != 'deterministic' or bool((self._snapshot.get('brain') or {}).get('answer_model'))
+            if natural_answer:
+                content += '\n用自己的话说就好，自己的 Agent 会理解；不确定也可以直接说明。'
+            field.placeholder = ('用自己的话回答，Enter 提交' if natural_answer
                                  else '回答 是 或 否（数字题填数字），Enter 提交')
             input_visible = True
         elif awaiting:

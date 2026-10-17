@@ -25,6 +25,17 @@ def run(coro):
     return asyncio.run(coro)
 
 
+def test_answer_model_loads_existing_demo_llm_environment(monkeypatch):
+    for name in ('XAGENT_MODEL_BASE_URL', 'XAGENT_MODEL_NAME', 'XAGENT_MODEL_API_KEY'):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv('LLM_BASE_URL', 'http://127.0.0.1:1234/v1')
+    monkeypatch.setenv('LLM_MODEL', 'test-model')
+    monkeypatch.setenv('LLM_API_KEY', 'fixture-key')
+    model = ModelPolicy.from_env()
+    assert model.base_url == 'http://127.0.0.1:1234/v1'
+    assert model.model == 'test-model' and model.api_key == 'fixture-key'
+
+
 def test_extract_only_expressed_requirements_and_scenario_aliases():
     policy = DeterministicPolicy()
     got = run(policy.extract("人数>=30, 投影仪=true; 位于徐汇", SCENARIO))

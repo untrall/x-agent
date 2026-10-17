@@ -18,6 +18,8 @@
 # Leave: Ctrl+B then D (detach), or: tmux kill-session -t xagent-demo
 set -euo pipefail
 cd "$(dirname "$0")/.."
+RESET=false
+if [ "${1:-}" = --reset-existing ]; then RESET=true; shift; fi
 
 SESSION=xagent-demo
 PY=.venv/bin/python
@@ -25,7 +27,7 @@ command -v tmux >/dev/null || { echo "需要 tmux：brew install tmux" >&2; exit
 bash scripts/with_llm_env.sh true   # fail early if the model key is missing
 
 # Act 1 data: same engine run the web page reads.
-"$PY" scripts/build_demo_data.py >/dev/null
+if ! $RESET; then "$PY" scripts/build_demo_data.py >/dev/null; fi
 WEB_PORT=$("$PY" -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
 WEB_URL="http://127.0.0.1:$WEB_PORT/?auto"
 
@@ -35,19 +37,34 @@ DIR=$("$PY" scripts/run_combined.py --configs-only "$@" | sed -n 's/^配置目�
 # Candidates (2-4) answer chat with the real model; 阿哲 (1) only asks.
 agent() {
   if [ "$1" = 1 ]; then
-    echo "$PY scripts/run_agent.py --config $DIR/agent-1.json"
+    echo "bash scripts/with_llm_env.sh $PY scripts/run_agent.py --config $DIR/agent-1.json --answer-model"
   else
-    echo "bash scripts/with_llm_env.sh $PY scripts/run_agent.py --config $DIR/agent-$1.json --chat-model"
+    echo "bash scripts/with_llm_env.sh $PY scripts/run_agent.py --config $DIR/agent-$1.json --chat-model --answer-model"
   fi
 }
 choice="--owner-choice --tmux-target $SESSION:agents"
 for arg in "$@"; do [ "$arg" = --auto-chat ] && choice=""; done
-driver="read -p '4 个 Agent 已上线。讲完网页第一幕后，按 Enter 开始第二幕…' _"
+driver="clear; read -p '4 个 Agent 已上线。讲完网页第一幕后，按 Enter 开始第二幕…' _"
 # Hand the keyboard to 阿哲's window so he can chat and /choose.
 [ -n "$choice" ] && driver+="; tmux select-pane -t $SESSION:agents.0"
 driver+="; $PY scripts/run_combined.py --attach $DIR $choice"
 [ $# -gt 0 ] && driver+=" $(printf '%q ' "$@")"
 driver+="; echo; echo '演示结束。退出：Ctrl+B 再按 D，或 tmux kill-session -t $SESSION'; read"
+
+if $RESET; then
+  panes=()
+  while IFS= read -r pane; do panes+=("$pane"); done < <(tmux list-panes -t "$SESSION:agents" -F '#{pane_id}')
+  [ "${#panes[@]}" = 5 ] || { echo '演示终端布局不完整，请重新运行 demo_tui.sh' >&2; exit 1; }
+  # Stop the old driver first; then replace each TUI in place. The web server
+  # and attached terminal client survive. Fresh configs isolate all old data.
+  tmux respawn-pane -k -t "${panes[4]}" "bash -c $(printf %q "$driver")"
+  for n in 1 2 3 4; do
+    tmux respawn-pane -k -t "${panes[$((n-1))]}" "$(agent "$n")"
+  done
+  tmux select-pane -t "${panes[4]}"
+  echo "配置目录：$DIR"
+  exit 0
+fi
 
 tmux kill-session -t "$SESSION" 2>/dev/null || true
 tmux new-session -d -s "$SESSION" -n agents -x 220 -y 60 "$(agent 1)"
@@ -64,8 +81,9 @@ tmux select-layout -t "$SESSION:agents" tiled
 # `read -p` means "read from coprocess" and would not wait for Enter.
 tmux split-window -t "$SESSION:agents" -v -f -l 8 "bash -c $(printf %q "$driver")"
 # Web server lives in a background window and dies with the session.
-tmux new-window -d -t "$SESSION" -n web \
-  "$PY -m http.server $WEB_PORT --bind 127.0.0.1 --directory demo"
+web="$PY scripts/demo_control.py --port $WEB_PORT --"
+[ $# -gt 0 ] && web+=" $(printf '%q ' "$@")"
+tmux new-window -d -t "$SESSION" -n web "$web"
 
 echo "配置目录：$DIR"
 echo "第一幕网页：$WEB_URL"

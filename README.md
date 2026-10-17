@@ -1,316 +1,227 @@
-<p align="center">
-  <h1 align="center">X-Agent</h1>
-  <h3 align="center">Your agents already know you. X turns that into a meeting.</h3>
-</p>
+# X-Agent
 
-<p align="center">
-| <a href="https://untrall.github.io/x-agent/?auto"><b>Live Demo</b></a> | <a href="#quick-start"><b>Quick Start</b></a> | <a href="#how-it-works"><b>How It Works</b></a> | <a href="#demo"><b>Demo Script</b></a> | <a href="#scenarios"><b>Scenarios</b></a> | <a href="#roadmap"><b>Roadmap</b></a> | <a href="#中文版"><b>中文版</b></a> |
-</p>
+### 让 Agent 先聊，让人与人相遇
 
-<p align="center">
-  <img src="https://img.shields.io/badge/python-3.12%2B-blue" alt="Python 3.12+">
-  <img src="https://img.shields.io/badge/transport-peer%20HTTP-brightgreen" alt="Peer-to-peer HTTP">
-  <img src="https://img.shields.io/badge/scenarios-cofounder%20%7C%20venue-ff4d5e" alt="Scenarios: cofounder and venue">
-  <img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT License">
-  <img src="https://img.shields.io/badge/built%20at-Zhangjiang%20Alumni%20Hackathon%202026-e8b34b" alt="Hackathon">
-</p>
+你的 AI 已经很懂你，这份理解可以成为一次相遇的起点。
 
-Built for the Zhangjiang Alumni Hackathon (Oct 16–17, 2026). Agents talk first, ask their owners when information is missing, and resume the same conversation. Cofounder matching is the main demo; venue matching demonstrates reuse of the same negotiation core.
+X-Agent 是一款基于 Agent-to-Agent 的社交应用原型：从个人画像出发，发现契合的人，让双方 Agent 先交流；遇到未知偏好，回到本人询问，再带着补充继续沟通。最终，只有双方本人同意，才建立连接。
 
----
+**把重复的试探交给 Agent，把相遇的决定留给你。**
 
-## 当前 MVP：四个独立 Agent 的 TUI（2026-10-16）
+[网页 Playground](https://untrall.github.io/x-agent/?auto) · [完整流程与操作说明](docs/combined-flow.md) · [对话样例](docs/combined-dialogue-sample.md) · [协商内核文档](docs/implementation/mvp/README.md)
 
-四个相同应用分别监听 8011–8014，通过点对点 HTTP 协商；每个应用有自己的画像、SQLite、问题卡和批准入口。粗筛 → 向本人补问 → 原会话恢复 → 双方批准 → 一致结果卡。合伙人为主场景，场地配置验证可移植性。
+> 为 2026 张江校友 Hackathon 构建。当前主 Demo 为交友场景，同时保留合伙人与场地协商配置，用于探索通用的人与 Agent 协作框架。在线 Playground 展示第一幕；完整的四 Agent 交互需要在本地启动。
+
+## 一次完整的演示
+
+| 阶段 | 你会看到什么 |
+|---|---|
+| 画像与匹配 | 网页管理员视角展示画像、硬条件过滤、双向契合分和匹配理由 |
+| 偏好反馈 | “太安静了”的反馈更新排序，星图同时高亮陈语桐、方糖、林小满，引导进入下一幕 |
+| Agent 先聊 | 切换到四个独立 TUI，阿哲与三位交流对象的 Agent 通过 HTTP 核对条件 |
+| 本人补充 | Agent 询问“进入稳定关系后是否愿意在同一个城市长期生活？”，本人用自然语言回答，补充后恢复协商 |
+| 进一步了解 | 提案形成后，阿哲可以向对方的 Agent 提问，了解对方画像中的兴趣与期待 |
+| 双向确认 | 阿哲选定一位，对方本人接受后建立连接；对方也可以婉拒 |
+
+“当前同城”与“未来愿意长期同城生活”是两个独立字段，后者初始为待确认。主角的回答用于补充本轮要求，对方的回答用于确认自己的事实；不确定的回答会触发澄清，回答本身不会自动批准提案。
+
+## 快速开始
+
+在仓库根目录运行。需要 **Python 3.12+、uv、tmux**；本地分屏演示使用 Bash，已在 macOS 验证。
 
 ```bash
 uv sync --group dev
-# 先安装并登录本机 Codex CLI；每个终端各运行一条，编号替换为 1、2、3、4：
-uv run python scripts/run_agent.py --config configs/mvp/agent-1.json --mode codex
-# 自动四进程验收，使用临时端口与数据库：
-uv run python scripts/smoke_mvp.py
+# macOS 尚未安装 tmux 时：
+brew install tmux
 ```
 
-[完整启动、演示脚本、模型配置与边界](docs/implementation/mvp/README.md)。`--mode codex` 使用本机已登录 Codex CLI，默认 `gpt-6-luna / low`，已完成真实四进程验收；也支持 HTTP 模型适配器。不指定模式时使用确定性策略，可离线验证通信与状态机。
+### 1. 配置模型
 
-窗口顶部显示用户名片，主体展示 Agent 交流；需要用户补充时才显示问题和输入框，按 Enter 提交。模型模式下所有回答均由模型理解，不确定时继续补问。最终双方仍需明确批准方案。持久化会话保存在 `.local/`，不会提交到 Git。本轮协议为项目自有 HTTP JSON，不宣称标准 A2A 兼容。
-
-### 代码与资料入口
-
-| 路径 | 用途 |
-|---|---|
-| `src/xagent/mvp/` | 通用协商内核、HTTP、模型适配、SQLite 与 TUI |
-| `configs/mvp/` | 四个合成用户画像及合伙人/场地场景配置 |
-| `scripts/run_agent.py` | 启动单个独立 Agent |
-| `scripts/smoke_mvp.py` | 临时端口/数据库上的四进程验收 |
-| `tests/test_mvp_*.py` | 内核、模型边界、TUI 与跨进程回归测试 |
-| `docs/implementation/mvp/` | 当前实现、启动指南与验收记录 |
-| `docs/research/`、`docs/superpowers/` | 调研证据、设计与实施计划 |
-| `web/`、`src/xagent/api.py` | 早期确定性工作台，独立于当前 TUI |
-| `core/`、`demo/`、`scenarios/` | 原仓库匹配与画像蒸馏原型 |
-
-验证：`uv run pytest -q`。不消耗真实模型额度；真实模型验收需显式执行 `uv run python scripts/smoke_mvp.py --mode codex`。以下保留先前里程碑与原仓库说明。
-
-## Day 1：确定性协商工作台（2026-10-16）
-
-本轮新增的创业合伙人原型位于 `src/xagent/` 和 `web/`。使用 Python 3.12+ 与 uv：
-
-```bash
-uv run python scripts/dev.py
-```
-
-打开 <http://127.0.0.1:8000/?mode=api>；纯样例交互使用 <http://127.0.0.1:8000/?mode=sample>。
-选择林澈身份发起协商 → 回答加入时间问题 → 林澈确认提案 → 切换陈予确认 → 查看结果。
-回答仅更新当前会话；刷新和服务重启后可恢复 SQLite 中的协商。
-
-这是本地确定性、合成身份演示，尚未接入实时模型或跨进程 A2A。
-本节以下为仓库原有说明；旧版 demo 与本工作台分别运行。
-验证命令：`uv run --group dev pytest -q`，服务运行后执行 `uv run python scripts/smoke.py`。
-详见 [协作进度](docs/implementation/day1/progress.md)、[验收记录](docs/implementation/day1/acceptance.md) 与 [调研及后续计划](docs/research/2026-10-16/README.md)。
-
-## About
-
-X-Agent is an **agent-pool matching network**. The agents already around you — Muse, ChatGPT, Gemini, your daily assistants — know you deeply: your habits, your values, what you actually want. X-Agent never asks you to fill in another form. It **distills** what those agents know into a structured, matchable profile, and runs **two-sided matching** over the pool.
-
-X-Agent is built on:
-
-- **Distillation, not data collection** — raw conversations never leave the user's side; only a distilled profile card enters the pool. Privacy by distillation.
-- **Two-sided by construction** — the final score is the harmonic mean of both directional scores. She fits you *and* you fit her; one-sided attraction sinks.
-- **Explainable by default** — every score ships with human-readable reasons: who covers whose needs, which values align, which traits complement. A black box cannot tell its story; this can.
-- **Scenarios as configuration** — a scenario is one declarative file (vocabularies, similarity/complementarity trait axes, weights). Dating today, jobs tomorrow; the engine never changes.
-- **Living profiles** — conversation and feedback are re-distilled and merged in by confidence. Feedback becomes an explicit, inspectable threshold — never a hidden re-roll.
-
-## How It Works
-
-The distillation operator decomposes by scenario:
-
-```
-profile_scenario = Project_scenario( Distill_universal(raw material) )
-```
-
-The universal pass answers *"who is this person"*; the scenario projection answers *"in this arena, what about them matters"*. The same sentence — *"I pull all-nighters to ship"* — projects to *irregular schedule* in dating, and to *high execution drive* in cofounder matching.
-
-```
- your agents                  X-Agent                       the pool
- ┌────────────┐  raw text   ┌───────────────────┐
- │ daily asst │ ──────────▶ │ Distillation D     │  profile cards
- │ work agent │ (never      │  prompt generated  │ ──────────────▶  circulate
- │ chat agent │  leaves)    │  from the scenario │                  │
- └────────────┘             └───────────────────┘                  ▼
-        ▲                            │ merge (confidence-weighted)   two-sided
-        └──── questions / feedback ──┘                               matching
-```
-
-Matching runs in three named steps:
-
-**Step 1 — Hard gates.** Non-negotiables are checked in both directions before any scoring: distance (if either side requires the same city), incompatible stances on children, smoking dealbreakers. One failed gate zeroes the pair — and the rejection carries its reason.
-
-**Step 2 — Directional fit.** "She fits him" and "he fits her" are scored separately. Only one component is directional; the rest are symmetric:
-
-$$F(A \to B) = w_n \cdot \mathrm{cover}(A.\mathrm{needs}, B.\mathrm{offers}) + w_v \cdot V(A,B) + w_t \cdot T(A,B) + w_i \cdot J(A,B)$$
-
-| Component | Meaning | How it is computed | Weight |
-|---|---|---|---|
-| cover | B gives what A is looking for | share of A's `needs` tags present in B's `offers` | 0.45 |
-| V — values | shared priorities | rank-weighted overlap of the two ranked value lists | 0.25 |
-| T — traits | chemistry of dispositions | per axis: `sim` axes score closeness 1−\|a−b\|, `comp` axes score complementarity 1−\|a+b−1\| | 0.20 |
-| J — interests | shared life | Jaccard similarity of interest tags | 0.10 |
-
-**Step 3 — The short board decides (harmonic mean).**
-
-$$\mathrm{score}(A,B) = \frac{2 \cdot F(A \to B) \cdot F(B \to A)}{F(A \to B) + F(B \to A)}$$
-
-A match is only as strong as its less interested side, and the harmonic mean is brutally sensitive to the weaker direction — which is exactly the point. Measured by the engine on the demo pool:
-
-| Pair | She fits him | He fits her | Score |
-|---|---|---|---|
-| 阿哲 × 林小满 | 0.935 | 0.935 | **0.935** |
-| 阿哲 × 苏晴 | 0.407 | 0.632 | 0.495 |
-
-苏晴 looks near-perfect on paper — values 0.90, traits 0.909 — but she covers **0%** of what 阿哲 actually needs, so the harmonic mean sinks her to third. Similarity is not compatibility; this engine proves it, with numbers.
-
-Pool-wide pairing (everyone matched at once) is the classic two-sided stable-matching problem — see the roadmap.
-
-## Quick Start
-
-The core engine is pure Python 3 standard library. Zero dependencies.
-
-```bash
-# 1. Precompute the demo data (runs the real matching engine — nothing is faked)
-python3 scripts/build_demo_data.py
-
-# 2. Serve the demo
-cd demo && python3 -m http.server 8000
-# open http://localhost:8000 and hit "▶ 自动演示" (auto-play)
-```
-
-Distillation needs any OpenAI-compatible endpoint (the hackathon's Semantix credits work):
+自然语言补问和画像聊天使用 OpenAI 兼容的 Chat Completions 接口。设置自己的服务地址、模型与密钥：
 
 ```bash
 export LLM_BASE_URL=https://sem.ensureok.ai/v1
-export LLM_API_KEY=<your key>
-export LLM_MODEL=<a model from the provider's list>
-python3 scripts/distill_persona.py \
-  --raw data/raw_logs/azhe.md \
-  --scenario scenarios/dating.json \
-  --out /tmp/azhe.json
+export LLM_MODEL=glm-5.2
+export LLM_API_KEY='<your-api-key>'
 ```
 
-> **Verified live (2026-10-15):** a real end-to-end run against the Semantix gateway (`glm-5.2`) is captured in [examples/azhe_live_profile.json](examples/azhe_live_profile.json) and evaluated in [docs/live-distillation.md](docs/live-distillation.md) — hard facts 5/5, needs 4/4, and one honest surprise: re-ranked with the live profile, the match winner changes. Reproduce with `python3 scripts/eval_distillation.py`.
-
-## Repository Layout
-
-```
-core/schema.py          profile structure + validation/normalization
-core/distill.py         distillation operator D (prompt generated from scenario config) + merge
-core/match.py           matching engine: hard filters, two-sided scoring, reasons, feedback re-ranking
-scenarios/dating.json   the dating scenario: vocabularies, sim/comp axes, weights, hard rules
-data/personas.json      13 pre-distilled personas (protagonist + 12 candidates)
-data/raw_logs/          sample raw material (memory exports from three source agents)
-scripts/                distill CLI + demo data builder
-demo/index.html         single-file demo front-end (canvas starfield + the red thread)
-```
-
-## Demo
-
-A 2–3 minute stage script, choreographed around one moment: thousands of threads flicker, and exactly one turns red.
-
-| Time | Action | What it proves |
-|---|---|---|
-| 0:00 | Click **① 接入我的 Agents** | Three source agents stream their memories into X; a profile card crystallizes — raw text never leaves the user's side |
-| 0:40 | Click **② 和我聊聊** | The profile is alive: follow-up answers are re-distilled and merged by confidence |
-| 1:20 | Click **③ 开始匹配** | Hard rules first (long-distance / smoking rejected on stage, with reasons), then two-sided scoring |
-| 2:00 | The red thread locks onto 林小满 (0.935) | Open the reasons panel: mutual needs/offers coverage + harmonic mean; the one-sided decoy 苏晴 sits at #3 as proof |
-| 2:30 | Click **④ 反馈：太安静了** | Feedback becomes an explicit extroversion threshold — 林小满 is demoted, 陈语桐 wins. No hidden re-roll |
-
-The demo arcs are designed into the personas but **computed by the real engine**, never scripted: mutual-coverage winner, high-similarity one-sided decoy, and two hard-filter rejections.
-
-## Scenarios
-
-Adding a scenario (jobs, cofounder matching, friendship) means writing one config file — copy `scenarios/dating.json` and change:
-
-1. **Vocabularies** — `values_vocab` and `needs_offers_vocab` for the arena (in jobs, offers are skills and needs are role requirements)
-2. **Trait axes** — each axis marked `sim` or `comp`, with a weight (cofounder matching: skills complementary, risk appetite similar)
-3. **Weights** — the four score components
-4. **Hard rules** — scenario-specific filters live in `core/match.py: hard_filter`, branched by scenario name
-
-The same person gets a *different profile per scenario* — and can share a different one with each pool. That granularity is a feature, not a bug.
-
-## Roadmap
-
-- [ ] Second scenario end to end: `scenarios/cofounder.json` or `scenarios/jobs.json`, with a fresh persona set — same engine, new config
-- [ ] Real agent integration: expose each source agent as an MCP server with a `get_user_model` tool (the architecture already assumes this)
-- [ ] Pool-wide pairing: from top-1 to global stable matching (Gale–Shapley), with a "whole pool paired" finale animation
-- [ ] Closed feedback loop: live chat answers → distill → merge → re-rank (the demo currently scripts the Q&A beats)
-- [ ] Click a candidate node to inspect their profile card from the other direction
-- [ ] Weight learning: after repeated feedback, adjust scenario `weights` with a simple online update
-
-## Contributing
-
-Built by a two-person hackathon team; PRs and issues welcome. Three design rules before you touch the code:
-
-- The matcher must stay a **pure, deterministic function** — same input, same ranking, every time. No randomness on stage.
-- Every score component must generate a **human-readable reason**. If it cannot explain itself, it does not ship.
-- Raw text lives only in user-side material (`data/raw_logs/`). It **never** enters pool data structures.
-
-## License
-
-MIT
-
----
-
-## 中文版
-
-<p align="center"><i>你的 agent 已经很懂你了 — X 把这份「懂」，变成一次相遇。</i></p>
-
-### 关于
-
-X-Agent 是一个**智能体池匹配网络**。每个人身边都有越来越懂自己的 agent（Muse、ChatGPT、Gemini、各类助手），X-Agent 不再让用户填一遍表：它接入这些 agent 的记忆，**蒸馏**成一张可计算的结构化画像，再在池子里做**双边匹配**。婚恋、交友、求职、创业伙伴 — 同一套引擎。
-
-它的立场：
-
-- **蒸馏，而非搬运** — 原始聊天永不离开用户侧；进入池子的只有蒸馏后的结构化画像。隐私靠蒸馏解决。
-- **双边匹配** — 最终分 = 两个方向分数的调和平均。她合你、你也得合她 — 单相思，沉底。
-- **可解释** — 每个分数都带理由（谁覆盖了谁的哪些需求、共同看重什么、哪条特质互补）。黑盒匹配讲不出故事，我们讲得出。
-- **场景可插拔** — 场景 = 一份声明式配置（词表、sim/comp 特质轴、权重）。换场景只改配置，引擎不动。
-- **活画像** — 聊天与反馈持续蒸馏、按置信度并入画像；反馈会变成显式的门槛偏好，而不是偷偷重掷骰子。
-
-### 工作原理
-
-算子分解：`画像_场景 = Project_场景( Distill_通用(原始材料) )`。通用蒸馏回答"这个人是谁"，场景投影回答"在这个场景里，该看他的什么"。同一句"我经常熬夜赶项目"：婚恋投影读出*作息不规律*，创业投影读出*执行力强*。
-
-匹配分三步，每一步都有名字：
-
-**第一步 · 硬门（Hard Gates）** — 先谈不能谈的。异地（任一方要求同城）、生育观冲突、吸烟 dealbreaker，双向检查；任何一条不过，分数直接归零，淘汰附理由。
-
-**第二步 · 双向契合（Directional Fit）** — 「她合他」和「他合她」是两个分数。其中只有需求覆盖是方向性的，其余分量对称：
-
-$$F(A \to B) = w_n \cdot \mathrm{cover}(A.\mathrm{needs}, B.\mathrm{offers}) + w_v \cdot V(A,B) + w_t \cdot T(A,B) + w_i \cdot J(A,B)$$
-
-| 分量 | 含义 | 怎么算 | 权重 |
-|---|---|---|---|
-| 需求覆盖 cover | B 能给的，正是 A 在找的 | A 的 needs 标签被 B 的 offers 命中的比例 | 0.45 |
-| 价值观 V | 看重的东西是否一致 | 两份排序列表的加权重叠（越靠前权重越大） | 0.25 |
-| 特质 T | 脾性是否合拍 | 逐轴算：sim 轴取接近度 1−\|a−b\|，comp 轴取互补度 1−\|a+b−1\| | 0.20 |
-| 兴趣 J | 生活是否同频 | 兴趣标签的 Jaccard 相似度 | 0.10 |
-
-**第三步 · 短板合并（Harmonic Mean）** — 匹配的高度，由更不满意的一方决定：
-
-$$\mathrm{score}(A,B) = \frac{2 \cdot F(A \to B) \cdot F(B \to A)}{F(A \to B) + F(B \to A)}$$
-
-调和平均对短板极度敏感，这正是我们要的。引擎实测：
-
-| 配对 | 她合他 | 他合她 | 最终分 |
-|---|---|---|---|
-| 阿哲 × 林小满 | 0.935 | 0.935 | **0.935** |
-| 阿哲 × 苏晴 | 0.407 | 0.632 | 0.495 |
-
-苏晴纸面几乎满分（价值观 0.90、特质 0.909），但她对阿哲核心需求的覆盖是 **0** — 调和平均直接把他俩这对沉到第 3。像，不等于合；这套算法能用数字证明这一点。
-
-池级全局配对（全场同时配对）是经典的**双边稳定匹配问题**（Gale–Shapley），见路线图。
-
-### 快速开始
-
-核心引擎零第三方依赖（Python 3 标准库）：
+也可以在 macOS 钥匙串中保存密钥，由启动脚本读取。运行下列命令后按提示输入：
 
 ```bash
-python3 scripts/build_demo_data.py        # 跑真实引擎生成演示数据（不是写死的假数据）
-cd demo && python3 -m http.server 8000    # 打开 http://localhost:8000，点「自动演示」
+security add-generic-password -a "$USER" -s x-agent-llm -w
 ```
 
-真实蒸馏接任意 OpenAI 兼容端点（黑客松的 Semantix 额度即可）：设置 `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` 三个环境变量后运行 `scripts/distill_persona.py`（参数见英文版 Quick Start）。
+`scripts/with_llm_env.sh` 优先使用已有的 `LLM_API_KEY`，否则读取钥匙串。服务地址和模型可通过上述环境变量覆盖。密钥不需要写入 Agent 配置或仓库。
 
-> **已实跑验证（2026-10-15）**：用 Semantix 网关（glm-5.2）真实蒸馏出的画像存放在 [examples/azhe_live_profile.json](examples/azhe_live_profile.json)，完整评测见 [docs/live-distillation.md](docs/live-distillation.md)——硬事实 5/5、需求命中 4/4，外加一个诚实的发现：换上真画像重排，匹配冠军变了。用 `python3 scripts/eval_distillation.py` 可复现。
+### 2. 启动完整演示
 
-### 演示讲稿（2–3 分钟）
+```bash
+bash scripts/demo_tui.sh
+```
 
-| 时间 | 动作 | 要讲的一句 |
-|---|---|---|
-| 0:00 | 点「接入我的 Agents」 | 三个 agent 的记忆汇成一张画像卡 — 原始文本不出用户侧 |
-| 0:40 | 点「和我聊聊」 | 画像是活的：追问 → 再蒸馏 → 置信度加权 merge |
-| 1:20 | 点「开始匹配」 | 先硬约束、再双向分；异地/吸烟当场淘汰且给理由 |
-| 2:00 | 红线锁定林小满（0.935） | 理由面板：双向需求覆盖 + 调和平均；单向诱饵苏晴第 3 就是证据 |
-| 2:30 | 点「反馈：太安静了」 | 反馈变成显式门槛，林小满降权、陈语桐胜出 — 不是重掷骰子 |
+脚本生成本轮配置和数据库，启动四个 TUI 与本地网页服务，并打印网页地址。端口自动分配，使用终端实际输出的地址。交互式 macOS 终端会尝试自动打开网页。
 
-### 场景扩展
+1. 网页自动播放第一幕，展示画像、匹配与反馈。
+2. 回到终端底部提示栏，按 **Enter** 开始第二幕。
+3. 需要本人补充时，焦点会切换到对应窗口。用自己的话回答，再按 **Enter** 提交。例如：“我希望稳定后能在同一个城市生活，也希望对方有这个打算。”
+4. 提案到齐后，在阿哲窗口选择交流对象并输入问题；也可以使用 `@陈语桐 你周末一般怎么过？`。
+5. 点击“选定”或输入 `/choose 陈语桐`，由对方本人在自己的窗口接受或婉拒。
 
-复制 `scenarios/dating.json`，只改四样：词表、特质轴的 sim/comp 与权重、四个分项权重、硬规则（在 `core/match.py: hard_filter` 按场景名分支）。同一个人 在不同场景 是不同的画像，投给不同池子的也可以是不同份 — 这是特性，不是缺陷。
+```bash
+# 分离终端后重新进入
+tmux attach -t xagent-demo
 
-### 路线图
+# 完全结束本地演示
+tmux kill-session -t xagent-demo
+```
 
-- [ ] 第二个场景落地（`cofounder.json` 或 `jobs.json`）+ 第二组 personas，验证"同引擎、换配置"
-- [ ] 源 agent 改为 MCP server，暴露 `get_user_model` 工具
-- [ ] 从 top-1 扩展到全局稳定匹配（Gale–Shapley）+ "全场配对"收尾动画
-- [ ] 聊天闭环：真实回答 → 蒸馏 → merge → 重排（当前 demo 是脚本化 QA beats）
-- [ ] 点击候选人节点，从对方视角查看画像卡
-- [ ] 多次反馈后用在线学习微调场景权重
+按 **Ctrl+B，再按 D** 只分离终端，演示继续运行。重新执行启动命令会重建名为 `xagent-demo` 的演示会话。
 
-### 设计原则
+### 3. 自动演示与重置
 
-- 匹配函数必须是**纯函数 + 确定性输出** — 同样的输入永远同样的排名，舞台上不许有随机性。
-- 任何分数都要能生成**人类可读的理由**；给不出理由的分项不要加。
-- 原始文本只出现在用户侧材料里，**永不进入池数据结构**。
+```bash
+# 网页第一幕结束后仍需按一次 Enter；随后脚本自动代答、提问和确认
+bash scripts/demo_tui.sh --auto-chat
 
-### 许可证
+# 放慢第二幕操作，便于讲解
+bash scripts/demo_tui.sh --auto-chat --delay 3
+```
+
+自动模式使用明确的演示预设回答，并默认选择排名第一的交流对象；它用于录屏和流程验证。默认交互模式由本人回答和批准。
+
+本地网页右上角的 **“重置”** 会让网页、四个 TUI 和演示驱动一起回到开始状态。网页地址和终端布局保留，新的运行使用独立配置、端口和数据库；旧记录保留在 `.local/combined/`。重置完成后，点击网页“自动演示”重新播放，再在终端按 Enter 开始第二幕。
+
+GitHub Pages 或普通静态服务器没有 TUI 控制能力，其重置按钮只重置网页。
+
+## 其他运行方式
+
+### 仅看网页，无需模型
+
+```bash
+python3 scripts/build_demo_data.py
+python3 -m http.server 8080 --bind 127.0.0.1 --directory demo
+```
+
+打开 [本地网页演示](http://127.0.0.1:8080/?auto)。第一幕使用合成画像与预设问答，分数由实际匹配引擎计算。
+
+### 无界面的完整协商验证，无需模型
+
+```bash
+uv run python scripts/run_combined.py --delay 0
+```
+
+启动四个真实 Agent 进程，通过规则策略和脚本代答走完协商，输出路径位于 `.local/combined/<user>-<timestamp>-<id>/`：
+
+- `TRANSCRIPT.md`：事件记录。
+- `DIALOGUE.md`：面向演示的对话视图。
+- `result.json`：会话结果与快照。
+- 每个 Agent 的配置、SQLite 数据库和日志。
+
+带真实模型聊天的无界面演示：
+
+```bash
+bash scripts/with_llm_env.sh .venv/bin/python scripts/run_combined.py --auto-chat
+```
+
+### 单独启动 Agent
+
+```bash
+uv run python scripts/run_combined.py --configs-only
+# 使用上一步输出的本轮配置路径
+bash scripts/with_llm_env.sh .venv/bin/python scripts/run_agent.py \
+  --config <本轮目录>/agent-1.json --answer-model
+```
+
+| 参数 | 用途 |
+|---|---|
+| `--answer-model` | 用模型理解本人自然语言回答，协商仍遵守规则与类型校验 |
+| `--chat-model` | 提案阶段按本人的画像回答对方问题 |
+| `--mode model` | 使用 HTTP 模型策略参与协商决策 |
+| `--mode codex` | 使用本机已登录的 Codex CLI 策略 |
+| 不加上述参数 | 离线规则模式；回答只接受明确的布尔值、数字等字段类型 |
+
+一键演示已为四个 Agent 启用 `--answer-model`，为三位交流对象启用 `--chat-model`，无需手动追加。
+
+## 技术设计
+
+```mermaid
+flowchart LR
+    P[结构化画像] --> M[双向匹配与可解释排序]
+    M --> A[双方 Agent 核对条件]
+    A --> Q[缺少信息：询问本人]
+    Q --> U[自然语言理解与类型校验]
+    U --> A
+    A --> R[形成提案与进一步交流]
+    R --> C[双方本人确认]
+    C --> X[建立连接]
+```
+
+**匹配层**：先检查硬条件，再分别计算两个方向的需求覆盖、价值观、特质与兴趣分数，最终取调和平均。反馈可以改变显式偏好门槛并更新排序，每个分数附带解释。
+
+**协商层**：每个 Agent 拥有独立的 HTTP 服务、SQLite、画像、待答问题和批准入口。补充信息后恢复原会话，提案通过双方确认后形成一致的结果。通用内核位于 `src/xagent/mvp/`，字段与补问由场景配置描述。
+
+**模型层**：回答理解、画像聊天与协商策略分开。默认演示由模型理解自然语言、回答画像问题，规则负责状态转换。模型结果必须通过类型校验，无法确认时继续澄清。
+
+**演示桥接层**：`run_combined.py` 将匹配结果转换为四个 Agent 的独立配置；演示驱动负责启动、视角切换和自动代答。Agent 间协商使用点对点消息。
+
+## 当前实现与边界
+
+- 主演示采用合成用户画像。第一幕的接入动画、问答和反馈为预设内容，尚未接入个人助手账号或实时记忆源。
+- 画像蒸馏 CLI 可调用真实模型；“蒸馏 → 实时网页更新 → 自动重新匹配”仍待完整打通。
+- Agent 通信使用项目自定义 HTTP JSON 协议，尚未实现标准 A2A 协议兼容。
+- 原始聊天不进入匹配池数据结构；启用外部模型时，相关回答或画像上下文会发送到配置的模型服务。画像蒸馏不等于隐私保证。
+- 当前 P0 支持针对待答问题的回答、澄清、恢复协商，以及提案阶段聊天与选择；开放式持续聊天、随时接受提案仍属后续工作。
+- “建立连接”是本地演示的协商结果，不会向真实社交账号发送消息或安排线下见面。
+
+## 代码与文档
+
+| 路径 | 用途 |
+|---|---|
+| `demo/` | 第一幕网页、星图与匹配理由 |
+| `core/`、`scenarios/` | 画像蒸馏、双向评分与匹配场景 |
+| `data/personas.json`、`data/raw_logs/` | 合成画像与示例原始材料 |
+| `src/xagent/mvp/` | 协商内核、HTTP、SQLite、模型适配与 TUI |
+| `configs/mvp/dating-match.json` | 交友协商字段与“长期同城生活”补问 |
+| `configs/mvp/` | 合伙人、场地等复用场景及示例配置 |
+| `scripts/demo_tui.sh` | 网页 + 四 TUI 一键启动 |
+| `scripts/demo_control.py` | 本地网页服务与联动重置 |
+| `scripts/run_combined.py` | 匹配与协商桥接、自动演示与结果导出 |
+| `tests/` | 内核、自然语言回答、TUI、跨进程与重置测试 |
+| [完整演示流程](docs/combined-flow.md) | 参数、操作与两幕衔接 |
+| [MVP 实现说明](docs/implementation/mvp/README.md) | 通用协商内核与其他场景 |
+| [蒸馏评测](docs/live-distillation.md) | 已有真实模型画像蒸馏记录 |
+| [调研资料](docs/research/2026-10-16/README.md) | 框架选型与可行性分析 |
+
+### 画像蒸馏
+
+配置前述 `LLM_*` 环境变量后：
+
+```bash
+bash scripts/with_llm_env.sh .venv/bin/python scripts/distill_persona.py \
+  --raw data/raw_logs/azhe.md \
+  --scenario scenarios/dating.json \
+  --out /tmp/azhe_live.json
+```
+
+### 验证
+
+```bash
+uv run pytest -q
+uv run python scripts/smoke_mvp.py
+```
+
+测试使用本地数据和模型替身，不调用真实模型服务。tmux 集成测试在独立 socket 中验证重置，不影响正在演示的会话。真实模型交互通过前述完整演示命令体验。
+
+### 后续方向
+
+真实个人 Agent / 记忆源接入、标准 A2A 适配、持续对话与偏好更新，以及更多场景的端到端复用验证。
+
+## English
+
+**X-Agent — Let agents talk first. Let people decide.**
+
+A social application prototype where personal agents explore compatibility, ask their owners when information is missing, and resume the conversation with confirmed preferences. The hackathon demo connects a visual matching playground with four independent agent processes, natural-language owner input, and mutual approval. The negotiation core also includes cofounder and venue scenarios. The current transport is custom HTTP JSON; standard A2A interoperability is future work.
+
+## License
 
 MIT

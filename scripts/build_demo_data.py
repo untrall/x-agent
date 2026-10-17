@@ -22,7 +22,7 @@ FEEDBACK = {
     "text": "她太安静了，我希望对方外向一点。",
     "trait_min": {"extroversion": 0.55},
     "penalty": 0.45,
-    "note": "反馈没有重掷骰子——它把「外向程度」变成了一道门槛偏好，门槛以下的候选人被显式降权。",
+    "note": "反馈让我们更懂你的偏好——「外向程度」现在也会影响匹配结果。",
 }
 
 # The two questions X-Agent asks live on stage (phase 2 of the demo).

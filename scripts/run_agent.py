@@ -40,7 +40,7 @@ def load_config(path):
     return config
 
 
-async def run(config, headless, mode, chat_model=False):
+async def run(config, headless, mode, chat_model=False, answer_model=False):
     from xagent.mvp.chat import ChatModel
     from xagent.mvp.policy import DeterministicPolicy, ModelPolicy
     from xagent.mvp.runtime import AgentRuntime
@@ -52,7 +52,8 @@ async def run(config, headless, mode, chat_model=False):
     else:
         policy = ModelPolicy.from_env() if mode == "model" else DeterministicPolicy()
     runtime = AgentRuntime(config, policy=policy,
-                           chat_model=ChatModel.from_env() if chat_model else None)
+                           chat_model=ChatModel.from_env() if chat_model else None,
+                           answer_interpreter=ModelPolicy.from_env() if answer_model else None)
     server = AgentServer(uvicorn.Config(
         create_peer_app(runtime), host=config.get("host", "127.0.0.1"), port=config["port"],
         log_level="warning", access_log=False,
@@ -102,10 +103,12 @@ def main():
     parser.add_argument("--mode", choices=["deterministic", "model", "codex"], default="deterministic")
     parser.add_argument("--chat-model", action="store_true",
                         help="三选一阶段用真模型按画像回答聊天（读 LLM_BASE_URL/LLM_MODEL/LLM_API_KEY）")
+    parser.add_argument("--answer-model", action="store_true",
+                        help="用已配置的模型理解本人对补问的自然语言回答，不改变协商规则")
     args = parser.parse_args()
     try:
         config = load_config(args.config)
-        asyncio.run(run(config, args.headless, args.mode, args.chat_model))
+        asyncio.run(run(config, args.headless, args.mode, args.chat_model, args.answer_model))
     except KeyboardInterrupt:
         pass
     except (ValueError, OSError) as exc:

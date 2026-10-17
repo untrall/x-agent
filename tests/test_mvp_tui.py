@@ -465,6 +465,16 @@ async def test_natural_answer_enter_submits_without_send_button():
 
 
 @pytest.mark.asyncio
+async def test_model_answer_hint_with_rule_based_negotiation():
+    runtime = _yes_no_runtime()
+    runtime.state['brain'] = {'answer_model': 'glm-5.2'}
+    app = AgentApp(runtime)
+    async with app.run_test(size=(100, 35)):
+        assert '用自己的话' in app.query_one('#owner-input', Input).placeholder
+        assert '自己的 Agent' in str(app.query_one('#question-detail').content)
+
+
+@pytest.mark.asyncio
 async def test_clarification_restores_original_words_for_retry():
     runtime = RuntimeFixture()
     async def unclear(*args, **kwargs):

@@ -243,11 +243,11 @@ class ModelPolicy:
 
     def __init__(self, *, base_url: str | None = None, model: str | None = None,
                  api_key: str | None = None, timeout: float = 20.0):
-        self.base_url = base_url or os.environ.get("XAGENT_MODEL_BASE_URL")
-        self.model = model or os.environ.get("XAGENT_MODEL_NAME")
-        self.api_key = api_key or os.environ.get("XAGENT_MODEL_API_KEY")
+        self.base_url = base_url or os.environ.get("XAGENT_MODEL_BASE_URL") or os.environ.get("LLM_BASE_URL")
+        self.model = model or os.environ.get("XAGENT_MODEL_NAME") or os.environ.get("LLM_MODEL")
+        self.api_key = api_key or os.environ.get("XAGENT_MODEL_API_KEY") or os.environ.get("LLM_API_KEY")
         if not self.base_url or not self.model or not self.api_key:
-            raise PolicyError("model mode requires XAGENT_MODEL_BASE_URL, XAGENT_MODEL_NAME and XAGENT_MODEL_API_KEY")
+            raise PolicyError("模型需要 LLM_BASE_URL、LLM_MODEL、LLM_API_KEY（也支持 XAGENT_MODEL_*）")
         if not self.base_url.startswith(("http://", "https://")):
             raise PolicyError("model base URL must be HTTP(S)")
         self.timeout = timeout

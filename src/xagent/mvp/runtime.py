@@ -32,7 +32,7 @@ def _now() -> str:
 
 
 class AgentRuntime:
-    def __init__(self, config: dict, policy=None, chat_model=None):
+    def __init__(self, config: dict, policy=None, chat_model=None, answer_interpreter=None):
         self.config = dict(config)
         self.config["scenario"] = validate_scenario(self.config["scenario"])
         if not self.config.get("owner_token") or self.config["owner_token"] == self.config.get("token"):
@@ -50,6 +50,7 @@ class AgentRuntime:
         self.mode = policy.mode
         # Separate from the decision policy: only answers chat at the choice stage.
         self.chat_model = chat_model
+        self.answer_interpreter = answer_interpreter
         self._tasks: list[asyncio.Task] = []
         self._processing_tasks: set[asyncio.Task] = set()
         self._inflight_sessions: set[str] = set()
@@ -62,7 +63,8 @@ class AgentRuntime:
             "mode": self.mode,
             "brain": {"model": getattr(self.policy, "model", None),
                       "reasoning": getattr(self.policy, "reasoning", None),
-                      "chat_model": getattr(self.chat_model, "model", None)},
+                      "chat_model": getattr(self.chat_model, "model", None),
+                      "answer_model": getattr(self.answer_interpreter, "model", None)},
             "requests": self.storage.all("request"),
             "sessions": self.storage.all("session"),
             "questions": self.storage.all("question"),
@@ -710,12 +712,12 @@ class AgentRuntime:
         if expected_revision is not None and expected_revision != question["revision"]:
             raise ValueError("stale question revision")
         field = question["field"]
-        interpret = getattr(self.policy, 'interpret_answer', None)
+        interpret = getattr(self.answer_interpreter or self.policy, 'interpret_answer', None)
         if interpret is None:
             try:
                 value = coerce_fact(field, text, self.config['scenario'])
             except ValueError:
-                raise ValueError('当前为确定性模式；自然语言理解需要以 --mode codex 启动。当前可输入明确的“是 / 否”或数字。') from None
+                raise ValueError('当前未启用自然语言回答；请用 --answer-model 或 --mode codex 启动。离线规则模式仅接受明确的“是 / 否”或数字。') from None
         else:
             # In model mode even short answers need the current question context.
             result = validate_answer(await interpret(text, question, self.config['scenario']), field, self.config['scenario'])

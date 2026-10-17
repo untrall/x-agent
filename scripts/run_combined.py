@@ -11,12 +11,12 @@ per-agent configs for the decentralized negotiation runtime
 
     same_city   <- candidate.city == protagonist.city   (preloaded)
     non_smoker  <- not candidate.facts.smoker           (preloaded)
-    kids_open   <- candidate.facts.wants_kids != "no"   (WITHHELD)
+    long_term_same_city <- confirmed live by each owner (WITHHELD)
 
-kids_open is deliberately not preloaded: the scenario followup asks
+long_term_same_city is deliberately not preloaded: the scenario followup asks
 the protagonist live, and each candidate's owner is then asked to
 confirm the fact -- the loop-in beat. In --auto mode this driver
-answers owner questions from persona truth (the followup answer
+uses explicit scripted demo answers (the followup answer
 defaults to yes and is overridable); for the live venue demo, use
 --configs-only and answer by hand in four TUI windows.
 
@@ -42,6 +42,7 @@ import socket
 import subprocess
 import sys
 import time
+import uuid
 from pathlib import Path
 
 import httpx
@@ -110,8 +111,9 @@ def free_ports(count: int) -> list:
             s.close()
 
 
-def kids_open(persona: dict) -> bool:
-    return persona.get("facts", {}).get("wants_kids") != "no"
+# Scripted stand-in for a human answer in automatic demos only.
+# Current city and other persona facts do not imply future living plans.
+AUTO_LONG_TERM_SAME_CITY = True
 
 
 def persona_brief(person: dict) -> dict:
@@ -144,7 +146,7 @@ def build_configs(admin: dict, workdir: Path) -> list:
             "same_city": person.get("city") == user.get("city"),
             "non_smoker": not person.get("facts", {}).get("smoker", False),
         }
-        # kids_open intentionally withheld -> negotiated live (followup).
+        # long_term_same_city intentionally withheld -> negotiated live (followup).
         cfg = {
             "agent_id": f"agent-{n}",
             "owner_id": f"owner-{n}",
@@ -157,7 +159,7 @@ def build_configs(admin: dict, workdir: Path) -> list:
             "scenario": scenario,
             "profile": {
                 "facts": facts,
-                "public_fields": ["same_city", "non_smoker", "kids_open"],
+                "public_fields": ["same_city", "non_smoker", "long_term_same_city"],
                 "tags": person.get("interests", [])[:3],
                 "description": person.get("essence", ""),
                 "persona": persona_brief(person),
@@ -214,7 +216,9 @@ class AgentProc:
         r = httpx.request(
             method, self.url + path,
             headers={"Authorization": f"Bearer {self.cfg['owner_token']}"},
-            json=body, timeout=10, trust_env=False)
+            # Answer interpretation may take two 20-second model requests
+            # (including schema repair); don't abandon the owner operation early.
+            json=body, timeout=50 if path == '/owner/answers' else 10, trust_env=False)
         r.raise_for_status()
         return r.json()
 
@@ -275,7 +279,7 @@ def focus_chooser(target: str, req_sessions: list, waiting_on: list | None = Non
 def drive(agents: list, admin: dict, followup_answer: str,
           delay: float = 0.0, auto_chat: bool = False,
           owner_choice: bool = False, tmux_target: str | None = None) -> dict:
-    """Auto-owner: answer questions from persona truth, then pick one.
+    """Auto-owner: use scripted demo answers, then pick one.
 
     Once every candidate has reached a proposal, the protagonist chooses
     exactly one. owner_choice leaves that to the human (chat with @名字,
@@ -315,8 +319,8 @@ def drive(agents: list, admin: dict, followup_answer: str,
                     continue
                 if q.get("kind") == "additional_requirements":
                     text = followup_answer
-                elif q.get("field") == "kids_open":
-                    text = "是" if kids_open(people[agent.cfg["agent_id"]]) else "否"
+                elif q.get("field") == "long_term_same_city":
+                    text = "是" if AUTO_LONG_TERM_SAME_CITY else "否"
                 else:
                     continue
                 agent.call("POST", "/owner/answers",
@@ -456,6 +460,10 @@ def write_transcript(admin: dict, agents: list, workdir: Path) -> dict:
     return result
 
 
+def new_workdir(user):
+    return ROOT / '.local' / 'combined' / f'{user}-{time.strftime("%Y%m%d-%H%M%S")}-{uuid.uuid4().hex[:8]}'
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="管理员排名 → 用户视角协商的结合演示")
@@ -499,8 +507,7 @@ def main():
             sys.exit(f"{workdir} 里的配置与 --user {args.user} --top "
                      f"{args.top} 的排名不一致")
     else:
-        stamp = time.strftime("%Y%m%d-%H%M%S")
-        workdir = ROOT / ".local" / "combined" / f"{args.user}-{stamp}"
+        workdir = new_workdir(args.user)
         workdir.mkdir(parents=True, exist_ok=True)
         configs = build_configs(admin, workdir)
 
@@ -562,7 +569,7 @@ def main():
 # ---------------------------------------------------------------- dialogue
 
 FIELD_LABELS = {"same_city": "同城", "non_smoker": "不抽烟",
-                "kids_open": "对要孩子持开放态度"}
+                "long_term_same_city": "进入稳定关系后愿意在同一个城市长期生活"}
 
 
 def render_dialogue(admin: dict, snaps: dict, workdir: Path) -> None:
@@ -571,7 +578,7 @@ def render_dialogue(admin: dict, snaps: dict, workdir: Path) -> None:
     reqs = demand_requirements(user)
     req_text = "、".join(FIELD_LABELS.get(r["field"], r["field"]) for r in reqs)
     out = [f"# 对话视图：{user['name']}的 Agent × 候选人的 Agent", "",
-           "> 自动模式下，标注为「本人」的发言由驱动按画像代答；"
+           "> 自动模式下，标注为「本人」的发言由驱动按演示脚本代答；"
            "现场 TUI 模式下为真人输入。其余皆为 Agent 间真实消息事件。", ""]
     followup_shown = False
     chosen = chosen_name(admin, snaps)
@@ -614,22 +621,22 @@ def render_dialogue(admin: dict, snaps: dict, workdir: Path) -> None:
                     out.append(f"**{c['name']}的 Agent**：硬条件都对上了，"
                                f"但有一项我这里没有记录，我去问一下本人。")
             elif t == "POLICY_DECISION" and side == "req" \
-                    and "是否要求" in (e.get("summary") or ""):
+                    and (e.get("payload") or {}).get("field") == "long_term_same_city":
                 if not followup_shown:
                     out.append(f"**系统** → {user['name']}："
                                f"{e.get('summary')}（这是你画像里没定的偏好）")
-                    out.append(f"**{user['name']}**：是，要求对方不排斥。")
+                    out.append(f"**{user['name']}**：我希望稳定后能在同一个城市长期生活，也希望对方有这个打算。")
                     followup_shown = True
                 else:
                     out.append("**系统**：（同一条补问已同步到这条会话）")
             elif t == "QUESTION" and side == "prov":
                 out.append(f"**{c['name']}的 Agent** → {c['name']}："
-                           f"对方想确认——你对要孩子持开放态度吗？")
+                           f"对方想确认——进入稳定关系后是否愿意在同一个城市长期生活？")
             elif t == "ANSWER" and side == "prov":
-                # Declined sessions have no artifact; answer came from persona.
-                val = agreed.get("kids_open", kids_open(c))
+                # Automatic demos use the scripted answer if no artifact exists.
+                val = agreed.get("long_term_same_city", AUTO_LONG_TERM_SAME_CITY)
                 out.append(f"**{c['name']}**："
-                           f"{'是的，我持开放态度。' if val else '这个我比较确定不要。'}")
+                           f"{'我愿意，稳定后希望在同一个城市长期生活。' if val else '我暂时没有长期在同一个城市生活的打算。'}")
             elif t == "PROPOSAL" and side == "req":
                 out.append(f"**{user['name']}的 Agent**：条件全部对齐，"
                            f"我正式发出一份「见面提案」。")

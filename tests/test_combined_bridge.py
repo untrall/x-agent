@@ -10,7 +10,6 @@ from scripts.run_combined import (  # noqa: E402
     admin_ranking,
     build_configs,
     demand_requirements,
-    kids_open,
 )
 
 
@@ -40,7 +39,7 @@ def test_demand_requirements_come_from_persona_facts():
     assert {"field": "non_smoker", "op": "eq", "value": True} in reqs
 
 
-def test_configs_withhold_kids_open_but_preload_hard_facts(tmp_path):
+def test_configs_withhold_long_term_same_city_but_preload_hard_facts(tmp_path):
     admin = admin_ranking("azhe", 3)
     configs = build_configs(admin, tmp_path)
     assert len(configs) == 4
@@ -51,8 +50,8 @@ def test_configs_withhold_kids_open_but_preload_hard_facts(tmp_path):
         facts = cfg["profile"]["facts"]
         assert facts["same_city"] is True
         assert facts["non_smoker"] is True
-        assert "kids_open" not in facts  # negotiated live, not preloaded
-        assert "kids_open" in cfg["profile"]["public_fields"]
+        assert "long_term_same_city" not in facts  # negotiated live, not preloaded
+        assert "long_term_same_city" in cfg["profile"]["public_fields"]
 
 
 def test_each_agent_gets_only_its_own_persona_without_hard_facts(tmp_path):
@@ -66,10 +65,14 @@ def test_each_agent_gets_only_its_own_persona_without_hard_facts(tmp_path):
         assert "外向程度" in persona["traits"]
 
 
-def test_kids_open_derivation():
-    assert kids_open({"facts": {"wants_kids": "open"}}) is True
-    assert kids_open({"facts": {"wants_kids": "yes"}}) is True
-    assert kids_open({"facts": {"wants_kids": "no"}}) is False
+def test_living_plan_is_separate_from_current_city(tmp_path):
+    configs = build_configs(admin_ranking("azhe", 3), tmp_path)
+    for cfg in configs:
+        assert cfg["profile"]["facts"]["same_city"] is True
+        assert "long_term_same_city" not in cfg["profile"]["facts"]
+        assert "kids_open" not in cfg["scenario"]["fields"]
+        assert cfg["scenario"]["followup"]["field"] == "long_term_same_city"
+        assert cfg["scenario"]["followup"]["title"] == "进入稳定关系后是否愿意在同一个城市长期生活？"
 
 
 def test_generated_config_files_are_valid_json(tmp_path):

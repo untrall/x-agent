@@ -36,6 +36,17 @@
     background:var(--panel); border:2px solid var(--red); border-radius:0; padding:10px 18px; box-shadow:var(--shadow);
     font-size:15px; text-align:center; transition:opacity .4s}
   #stageCaption b{color:var(--gold)}
+  .shortlist{position:absolute;top:18px;left:18px;right:18px;max-width:560px;background:rgba(31,30,29,.96);border:2px solid var(--gold);box-shadow:var(--shadow);padding:12px 14px}
+  .shortlist[hidden]{display:none}
+  .shortlist h3{font-size:13px;color:var(--gold);margin:0 0 10px}
+  .shortlist ol{list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0;margin:0}
+  .shortlist li{border-left:3px solid var(--gold);background:var(--panel2);padding:7px 9px}
+  .shortlist li:first-child{border-color:var(--red)}
+  .shortlist strong{display:block;font-size:14px;color:var(--ink)}
+  .shortlist li:first-child strong{color:#F2A07B}
+  .shortlist small,.shortlist p{font-size:11px;color:var(--dim)}
+  .shortlist p{margin:9px 0 0;line-height:1.5}
+  .stage.has-shortlist canvas{top:150px;height:calc(100% - 260px)}
   aside{width:400px; border-left:3px solid var(--line); padding:14px; overflow-y:auto; display:flex; flex-direction:column; gap:14px; background:var(--bg)}
   .card{background:var(--panel); border:2px solid var(--line); border-radius:0; padding:14px 16px; box-shadow:var(--shadow)}
   .card h3{font-family:var(--pixel); font-size:11px; color:var(--red); letter-spacing:1px; margin-bottom:10px; font-weight:400}
@@ -77,7 +88,7 @@
   .dirline b{color:var(--ink)}
   .note{font-size:12.5px; color:#F2C48D; background:#2E2418; border:2px solid #7A6127; border-radius:0; padding:8px 10px; line-height:1.6; margin-top:10px}
   #err{position:absolute; inset:0; display:none; place-items:center; color:#F2A07B; font-size:15px; text-align:center; padding:30px; line-height:1.8}
-  @media (max-width: 900px){ main{flex-direction:column} aside{width:auto; border-left:0; border-top:3px solid var(--line)} }
+  @media (max-width: 900px){ main{flex-direction:column;overflow-y:auto} .stage{flex:none;height:640px} aside{width:auto;flex:none;overflow:visible;border-left:0;border-top:3px solid var(--line)} }
 </style>
 </head>
 <body>
@@ -96,8 +107,13 @@
 <main>
   <section class="stage">
     <canvas id="cv"></canvas>
+    <section class="shortlist" id="shortlist" hidden aria-label="第二阶段交流名单">
+      <h3>先让彼此的 Agent 聊聊</h3>
+      <ol id="shortlistCandidates"></ol>
+      <p>交流后，由本人决定是否进一步认识</p>
+    </section>
     <div id="err">没能加载 demo_data.json。<br>请先运行 <b>python scripts/build_demo_data.py</b>，<br>再用 <b>python3 -m http.server</b> 打开本页（不要直接双击文件）。</div>
-    <div id="stageCaption">池子里有 <b>12 位候选人</b>。他们的 agent 各自握着关于他们的记忆 — 但原始聊天，永远不会离开他们自己。</div>
+    <div id="stageCaption">池子里有 <b>12 位用户</b>。他们的 agent 各自握着关于他们的记忆 — 但原始聊天，永远不会离开他们自己。</div>
   </section>
   <aside>
     <div class="card" id="profileCard">
@@ -177,11 +193,17 @@ function drawNode(n, t){
     ctx.fillStyle = "#8A8580"; ctx.font = "12px Silkscreen, 'PingFang SC', sans-serif";
     ctx.fillText(n.name, x, y - n.r - 12);
   } else {
+    const shortlisted = n.shortlistRank;
+    const color = shortlisted === 1 ? "#D97757" : "#e8b34b";
     const tw = .75 + .25 * Math.sin(t/900 + n.x*20);
     const g = ctx.createRadialGradient(x, y, 1, x, y, n.r*2.1);
     g.addColorStop(0, "rgba(217,119,87," + (.34*tw) + ")"); g.addColorStop(1, "rgba(217,119,87,0)");
     ctx.fillStyle = g; ctx.beginPath(); px(x, y, n.r*2.1); ctx.fill();
     ctx.fillStyle = "#F2C48D"; ctx.beginPath(); px(x, y, Math.max(2.5, n.r*.32)); ctx.fill();
+    if(shortlisted){
+      ctx.strokeStyle = color; ctx.lineWidth = shortlisted === 1 ? 2.5 : 1.8;
+      ctx.strokeRect(x - n.r - 4, y - n.r - 4, n.r*2 + 8, n.r*2 + 8);
+    }
     ctx.fillStyle = "rgba(240,238,230,.85)"; ctx.font = "12px Silkscreen, 'PingFang SC', sans-serif"; ctx.textAlign = "center";
     ctx.fillText(n.name, x, y + n.r + 13);
   }
@@ -200,6 +222,9 @@ function drawEdge(e, t){
     const grad = ctx.createLinearGradient(x1, y1, x2, y2);
     grad.addColorStop(0, "#e8b34b"); grad.addColorStop(1, "#D97757");
     ctx.strokeStyle = grad; ctx.lineWidth = 2.6;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(ex, ey); ctx.stroke();
+  } else if(e.state === "shortlisted"){
+    ctx.strokeStyle = "rgba(232,179,75,.82)"; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(ex, ey); ctx.stroke();
   } else if(e.state === "rejected"){
     ctx.strokeStyle = "rgba(138,133,128,.28)"; ctx.lineWidth = 1; ctx.setLineDash([4, 5]);
@@ -348,7 +373,7 @@ async function lockWinner(r, captionHtml){
 
 async function phase3(){
   if(animating || phase >= 3) return; animating = true; phase = 3;
-  caption("开始匹配：先过硬约束，再算双向分 — 每条候选连接都会当场评估。");
+  caption("开始匹配：先过硬约束，再算双向分 — 每条连接都会当场评估。");
   await sleep(700);
   const ranking = D.rankings.default;
   for(const r of ranking){
@@ -379,12 +404,28 @@ async function phase4(){
   const note = fb.note + (demoted ? " " + demoted.candidate.name + " 因此从 " +
     D.rankings.default.find(r => r.candidate_id === demoted.candidate_id).score.toFixed(3) +
     " 降到 " + demoted.score.toFixed(3) + "。" : "");
-  fillMatchPanel(winner, "反馈后的连接", note);
-  const e = edges.find(x => x.to === winner.candidate_id);
-  if(e){ e.state = "winner"; e.score = winner.score; }
-  const iv = setInterval(() => spawnPulse(heroId, winner.candidate_id, "#E8946B", .011, 2.2), 420);
+  const shortlist = ranking.filter(r => r.passed).slice(0,3);
+  fillMatchPanel(winner, "进一步了解", note);
+  // Use the same feedback ranking as the second-act driver, not fixed names.
+  for(const row of ranking){
+    const edge = edges.find(e => e.to === row.candidate_id);
+    if(edge){ edge.score = row.score; edge.state = row.passed ? "kept" : "rejected"; }
+  }
+  const list = $("#shortlistCandidates"); list.replaceChildren();
+  shortlist.forEach((row,index) => {
+    nodes[row.candidate_id].shortlistRank = index + 1;
+    const edge = edges.find(e => e.to === row.candidate_id);
+    if(edge) edge.state = index === 0 ? "winner" : "shortlisted";
+    const item = document.createElement("li"), name = document.createElement("strong"), score = document.createElement("small");
+    name.textContent = row.candidate.name;
+    score.textContent = row.score.toFixed(3);
+    item.append(name,score); list.append(item);
+  });
+  $("#shortlist").hidden = false;
+  $(".stage").classList.add("has-shortlist"); resize();
+  const iv = setInterval(() => shortlist.forEach((row,index) => spawnPulse(heroId, row.candidate_id, index === 0 ? "#E8946B" : "#e8b34b", .011, index === 0 ? 2.2 : 1.5)), 650);
   setTimeout(() => clearInterval(iv), 6000);
-  caption("反馈没有重掷骰子 — 它变成了一条<b>可解释的门槛</b>。红线断开，又重新系上：<b>" + winner.candidate.name + "</b>。");
+  caption("<b>" + shortlist.map(r => r.candidate.name).join("、") + "</b>。<br>接下来切换 TUI，先让彼此的 Agent 聊聊，再由本人决定。");
   animating = false;
 }
 
@@ -392,7 +433,26 @@ $("#btn1").onclick = phase1;
 $("#btn2").onclick = phase2;
 $("#btn3").onclick = phase3;
 $("#btn4").onclick = phase4;
-$("#btnReset").onclick = () => location.reload();
+$("#btnReset").onclick = async () => {
+  const button = $("#btnReset");
+  button.disabled = true; button.textContent = "重置中…";
+  try {
+    // The hosted static playground still resets locally; the one-command
+    // localhost demo advertises its TUI control endpoint through this header.
+    const capability = await fetch(location.href, {method:"HEAD", cache:"no-store"});
+    if(capability.headers.get("X-XAgent-Control") === "1"){
+      const response = await fetch("/api/demo/reset", {
+        method:"POST", headers:{"X-XAgent-Request":"1"}, credentials:"same-origin"
+      });
+      if(!response.ok) throw new Error("TUI 重置失败，请检查终端或重新运行 demo_tui.sh");
+    }
+    const url = new URL(location.href); url.searchParams.delete("auto");
+    location.replace(url.href);
+  } catch(error) {
+    button.disabled = false; button.textContent = "重置";
+    $("#stageCaption").textContent = error.message;
+  }
+};
 $("#btnAuto").onclick = async () => {
   $("#btnAuto").disabled = true;
   await phase1(); await sleep(600);
