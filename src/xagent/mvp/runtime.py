@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+from contextvars import ContextVar
 from contextlib import AsyncExitStack
 from datetime import datetime, timezone
 
@@ -15,6 +16,15 @@ from .scenario import coerce_fact, evaluate_requirements, validate_requirement, 
 from .storage import Storage
 from .profile import profile_view
 from .policy import validate_answer
+
+
+# True while an answer is given on the owner's behalf (the demo driver), so the
+# ANSWER event can say so instead of looking like the owner typed it.
+_PROXY_ANSWER: ContextVar[bool] = ContextVar("proxy_answer", default=False)
+
+
+def _proxy_mark() -> dict:
+    return {"proxy": True} if _PROXY_ANSWER.get() else {}
 
 
 def _now() -> str:
@@ -361,7 +371,7 @@ class AgentRuntime:
                     self.storage.event(_now(), "REQUEST_RECEIVED", session["session_id"], session["peer_id"], "Peer request received", {"requirements": session["requirements"]}, db)
             if answered_question is not None:
                 self.storage.put("question", answered_question["question_id"], answered_question, db)
-                self.storage.event(_now(), "ANSWER", session["session_id"], session["peer_id"], "Owner answered fact question", {"question_id": answered_question["question_id"], "field": answered_question["field"]}, db)
+                self.storage.event(_now(), "ANSWER", session["session_id"], session["peer_id"], "Owner answered fact question", {"question_id": answered_question["question_id"], "field": answered_question["field"], **_proxy_mark()}, db)
             if memory is not None:
                 # Merge only this answer's field against the latest memory inside
                 # the transaction; other pair sessions can answer concurrently.
@@ -672,7 +682,15 @@ class AgentRuntime:
             self.storage.enqueue(self._envelope(session, "REJECT", {"reason": "owner rejected proposal", "digest": digest}), db)
             self.storage.event(_now(), "REJECTED", session["session_id"], session["peer_id"], "Owner rejected proposal", {"digest": digest}, db)
 
-    async def answer(self, question_id: str, text: str, remember: bool = False, expected_revision: int | None = None) -> dict:
+    async def answer(self, question_id: str, text: str, remember: bool = False, expected_revision: int | None = None,
+                     proxy: bool = False) -> dict:
+        token = _PROXY_ANSWER.set(bool(proxy))
+        try:
+            return await self._answer_locked(question_id, text, remember, expected_revision)
+        finally:
+            _PROXY_ANSWER.reset(token)
+
+    async def _answer_locked(self, question_id: str, text: str, remember: bool, expected_revision: int | None) -> dict:
         question = self.storage.get("question", question_id)
         if question is None:
             raise ValueError("question is missing or already answered")
@@ -734,7 +752,7 @@ class AgentRuntime:
                     session["revision"] += 1
                     self.storage.put("session", session["session_id"], session, db)
                     self.storage.enqueue(self._envelope(session, "REQUIREMENTS", {"requirements": request["requirements"], "revision": request["revision"]}), db)
-                self.storage.event(_now(), "ANSWER", None, None, "Owner answered request question", {"question_id": question_id, "field": field}, db)
+                self.storage.event(_now(), "ANSWER", None, None, "Owner answered request question", {"question_id": question_id, "field": field, **_proxy_mark()}, db)
             return self.snapshot()
         session = self.storage.get("session", question["session_id"])
         if session is None or session["state"] != "WAITING_INPUT" or session["pending_question_id"] != question_id:

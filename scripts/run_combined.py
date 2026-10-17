@@ -256,13 +256,17 @@ def wait_chat_replies(requester, expected: int, timeout: float = 90) -> None:
 _focused = {"pane": None}
 
 
-def focus_chooser(target: str, req_sessions: list) -> None:
-    """Give the keyboard to whoever must decide next: the chosen candidate
-    while they consider 阿哲's choice, otherwise 阿哲 (pane 0). Pane n-1
-    shows agent-n (see scripts/demo_tui.sh)."""
+def focus_chooser(target: str, req_sessions: list, waiting_on: list | None = None) -> None:
+    """Give the keyboard to whoever must act next: someone who has to answer
+    a question first, then the chosen candidate while they consider 阿哲's
+    choice, otherwise 阿哲 (pane 0). Pane n-1 shows agent-n
+    (see scripts/demo_tui.sh)."""
     awaiting = next((s for s in req_sessions if s["state"] == "PENDING_APPROVAL"
                      and "agent-1" in s.get("approvals", [])), None)
-    pane = int(awaiting["peer_id"].split("-")[-1]) - 1 if awaiting else 0
+    if waiting_on:
+        pane = int(waiting_on[0].split("-")[-1]) - 1
+    else:
+        pane = int(awaiting["peer_id"].split("-")[-1]) - 1 if awaiting else 0
     if pane != _focused["pane"]:
         subprocess.run(["tmux", "select-pane", "-t", f"{target}.{pane}"], check=False)
         _focused["pane"] = pane
@@ -299,9 +303,15 @@ def drive(agents: list, admin: dict, followup_answer: str,
     # A human deciding in the TUI may take as long as the pitch needs.
     deadline = time.monotonic() + (3600 if owner_choice else 300)
     while time.monotonic() < deadline:
+        waiting_on = []  # agents whose owner must answer (manual demo)
         for agent in agents:
             for q in agent.state()["questions"]:
                 if q.get("answered") or q["question_id"] in answered:
+                    continue
+                if owner_choice:
+                    # Real people answer in their own window; just point the
+                    # keyboard there and wait.
+                    waiting_on.append(agent.cfg["agent_id"])
                     continue
                 if q.get("kind") == "additional_requirements":
                     text = followup_answer
@@ -311,7 +321,7 @@ def drive(agents: list, admin: dict, followup_answer: str,
                     continue
                 agent.call("POST", "/owner/answers",
                            {"question_id": q["question_id"], "text": text,
-                            "expected_revision": q["revision"]})
+                            "expected_revision": q["revision"], "proxy": True})
                 answered.add(q["question_id"])
                 time.sleep(delay)
         req_sessions = requester.state()["sessions"]
@@ -340,7 +350,7 @@ def drive(agents: list, admin: dict, followup_answer: str,
             chose = True
             time.sleep(delay)
         if tmux_target:
-            focus_chooser(tmux_target, req_sessions)
+            focus_chooser(tmux_target, req_sessions, waiting_on)
         for agent in agents[1:]:
             if owner_choice:
                 break  # two-way consent: the chosen candidate decides in their own window
@@ -528,7 +538,8 @@ def main():
                   "按 Enter 开始第二幕…")
         print(f"【用户视角】{len(agents)} 个 Agent 已上线，开始协商…")
         if args.owner_choice:
-            print(f"提案到齐后，在{admin['user']['name']}的窗口里选人聊天、点「选定」；"
+            print("需要谁回答时，键盘会自动切到谁的窗口，等本人回答后才继续；"
+                  f"提案到齐后，在{admin['user']['name']}的窗口里选人聊天、点「选定」，"
                   "被选中的候选在自己窗口里接受或婉拒。")
         drive(agents, admin, args.followup_answer, delay,
               auto_chat=args.auto_chat, owner_choice=args.owner_choice,

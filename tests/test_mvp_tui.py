@@ -179,7 +179,7 @@ async def test_event_log_explains_public_requirements_and_filter_reasons():
     app = AgentApp(runtime)
     async with app.run_test():
         log = app.query_one("#events", RichLog)
-        rendered = " ".join(str(line) for line in log.lines)
+        rendered = " ".join(line.text for line in log.lines)
         assert "Weekly hours" in rendered
         assert "20" in rendered
         assert "符合" in rendered
@@ -194,7 +194,7 @@ async def test_processing_error_shows_message_id_and_retries_only_on_command():
     app = AgentApp(runtime)
     async with app.run_test() as pilot:
         log = app.query_one("#events", RichLog)
-        rendered = " ".join(str(line) for line in log.lines)
+        rendered = " ".join(line.text for line in log.lines)
         assert "model timeout" in rendered
         assert "m-blocked" in rendered
         assert runtime.calls == []
@@ -221,7 +221,7 @@ async def test_loop_in_only_appears_for_question_then_closes_when_answered():
         app.refresh_from_runtime()
         await pilot.pause()
         assert panel.display
-        assert '需要你参与' in str(app.query_one('#loop-title').content)
+        assert '需要我本人回答' in str(app.query_one('#loop-title').content)
         assert app.focused is app.query_one('#owner-input')
         app._pulse_loop_in()
         first = panel.has_class('pulse')
@@ -278,9 +278,9 @@ async def test_agent_stream_has_direction_and_distinguishes_local_decisions():
     ]
     app = AgentApp(runtime)
     async with app.run_test():
-        rendered = ' '.join(str(line) for line in app.query_one('#events', RichLog).lines)
-        assert 'a2 → 我' in rendered
-        assert '我的 Agent · 决策' in rendered
+        rendered = ' '.join(line.text for line in app.query_one('#events', RichLog).lines)
+        assert 'a2的 Agent → 我的 Agent' in rendered
+        assert '我的 Agent（内部）' in rendered
         assert '已知条件满足' in rendered
 
 
@@ -564,12 +564,12 @@ async def test_choice_panel_shows_latest_chat_of_current_target_only():
         await pilot.press('ctrl+down')
         await pilot.pause()
         detail = str(app.query_one('#question-detail').content)
-        assert "你 → 陈语桐：周末怎么过？" in detail and "正在回答" in detail
+        assert "我 → 陈语桐的 Agent：周末怎么过？" in detail and "正在回答" in detail
         assert not app.query_one('#selectors').display
         runtime.state["events"].append({"seq": 2, "type": "CHAT_REPLY", "session_id": "s3", "peer_id": "a3",
                                         "summary": "喜欢露营和跑步。", "payload": {"chat_id": "c1", "ok": True}})
         await pilot.pause(0.4)
-        assert "陈语桐 的 Agent：喜欢露营和跑步。" in str(app.query_one('#question-detail').content)
+        assert "陈语桐的 Agent → 我：喜欢露营和跑步。" in str(app.query_one('#question-detail').content)
 
 
 @pytest.mark.asyncio
@@ -600,9 +600,58 @@ async def test_candidate_is_asked_only_after_being_chosen():
         assert '等待对方选择' in str(app.query_one('#phase').content)
         runtime.state["sessions"][0]["approvals"] = ["a2"]    # 阿哲 chose me
         await pilot.pause(0.4)
-        assert '阿哲 选择了你 · 是否接受？' in str(app.query_one('#loop-title').content)
+        assert '阿哲本人 选择了我 · 是否接受？' in str(app.query_one('#loop-title').content)
         assert str(app.query_one('#approve-button', Button).label) == '接受'
         assert str(app.query_one('#reject-button', Button).label) == '婉拒'
         await pilot.click('#approve-button')
         await pilot.pause(0.3)
         assert runtime.calls == [("approve", "p1", True, "dp", 2)]
+
+
+@pytest.mark.asyncio
+async def test_every_line_names_four_distinct_roles():
+    runtime = _choice_runtime()
+    runtime.state["sessions"][0]["role"] = "requester"
+    runtime.state["events"] = [
+        {"seq": 1, "type": "CHAT_SENT", "session_id": "s2", "peer_id": "a2", "summary": "周末呢？", "payload": {"chat_id": "c"}},
+        {"seq": 2, "type": "CHAT_REPLY", "session_id": "s2", "peer_id": "a2", "summary": "爬山。", "payload": {"chat_id": "c", "ok": True}},
+        {"seq": 3, "type": "CHAT_RECEIVED", "session_id": "s2", "peer_id": "a2", "summary": "你呢？", "payload": {"chat_id": "d"}},
+        {"seq": 4, "type": "CHAT_REPLIED", "session_id": "s2", "peer_id": "a2", "summary": "看书。", "payload": {"chat_id": "d", "ok": True}},
+        {"seq": 5, "type": "POLICY_DECISION", "session_id": "s2", "peer_id": "a2", "summary": "All stated conditions pass", "payload": {}},
+    ]
+    app = AgentApp(runtime)
+    async with app.run_test(size=(120, 45)):
+        rendered = ' '.join(line.text for line in app.query_one('#events', RichLog).lines)
+        assert '我 → 林小满的 Agent' in rendered and '林小满的 Agent → 我' in rendered
+        assert '林小满本人 → 我的 Agent' in rendered and '我的 Agent → 林小满本人' in rendered
+        assert '对方的条件我都满足' in rendered and 'All stated' not in rendered
+
+
+@pytest.mark.asyncio
+async def test_question_says_who_answers_and_why():
+    runtime = RuntimeFixture()
+    runtime.config["peers"] = [{"agent_id": "a2", "name": "阿哲"}]
+    runtime.state["questions"] = [runtime.state["questions"][0]]   # fact question about me, from a2's session
+    app = AgentApp(runtime)
+    async with app.run_test(size=(120, 45)) as pilot:
+        await pilot.pause()
+        assert '需要我本人回答' in str(app.query_one('#loop-title').content)
+        detail = str(app.query_one('#question-detail').content)
+        assert '阿哲 那边要求对方「Weekly hours」' in detail and '需要我本人确认' in detail
+        runtime.state["questions"][0].update(kind="additional_requirements", scope="request", title="是否要求对方每周 20 小时？")
+        await pilot.pause(0.4)
+        detail = str(app.query_one('#question-detail').content)
+        assert '我画像里没定' in detail and '同步给所有候选' in detail
+
+
+@pytest.mark.asyncio
+async def test_proxy_answer_is_labelled_as_such():
+    runtime = RuntimeFixture()
+    runtime.state["events"] = [
+        {"seq": 1, "type": "ANSWER", "session_id": "s1", "peer_id": "a2", "summary": "Owner answered fact question",
+         "payload": {"question_id": "q1", "field": "hours", "proxy": True}},
+    ]
+    app = AgentApp(runtime)
+    async with app.run_test(size=(120, 45)):
+        rendered = ' '.join(line.text for line in app.query_one('#events', RichLog).lines)
+        assert '我 → 我的 Agent' in rendered and '演示脚本代答' in rendered

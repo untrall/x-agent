@@ -55,15 +55,14 @@ tmux set -t "$SESSION" mouse on
 for n in 2 3 4; do
   tmux split-window -t "$SESSION:agents" "$(agent "$n")"
 done
-# 阿哲 (pane 0) full height on the left — his chat is the show; the three
-# candidates stack on the right.
-tmux set -w -t "$SESSION:agents" main-pane-width 55%
-tmux select-layout -t "$SESSION:agents" main-vertical
+# 2x2 grid, equal windows: 阿哲 | 陈语桐 on top, 方糖 | 林小满 below.
+# Pane n-1 still shows agent-n, which the driver relies on to move focus.
+tmux select-layout -t "$SESSION:agents" tiled
 # Full-width strip along the bottom for the driver; it gets the keyboard
 # so Enter starts act 2.
 # Explicit bash: tmux runs commands in the user shell (zsh here), where
 # `read -p` means "read from coprocess" and would not wait for Enter.
-tmux split-window -t "$SESSION:agents" -v -f -l 12 "bash -c $(printf %q "$driver")"
+tmux split-window -t "$SESSION:agents" -v -f -l 8 "bash -c $(printf %q "$driver")"
 # Web server lives in a background window and dies with the session.
 tmux new-window -d -t "$SESSION" -n web \
   "$PY -m http.server $WEB_PORT --bind 127.0.0.1 --directory demo"

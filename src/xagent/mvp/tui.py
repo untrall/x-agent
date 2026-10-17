@@ -9,6 +9,7 @@ from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.css.query import NoMatches
 from textual.widgets import Button, Input, RichLog, Select, Static
+from . import pixel
 from .profile import profile_view
 
 
@@ -23,21 +24,30 @@ class AgentApp(App):
                 ("escape", "close_composer", "返回交流")]
 
     CSS = """
-    Screen { layout: vertical; }
-    #profile-card { height: auto; max-height: 8; border: round $primary; margin: 0 1; padding: 0 1; }
-    #identity { height: auto; text-style: bold; color: $text; }
+    Screen { layout: vertical; background: $background; }
+    #profile-card { height: auto; max-height: 9; border: tall $primary; margin: 0 1; padding: 0 1; background: $surface; }
+    #profile-card { border-title-color: $primary; border-title-style: bold; }
+    #avatar { width: 20; height: 7; padding: 0 2 0 0; }
+    /* Very short windows: drop the pet so the decision panel still fits. */
+    Screen.compact #avatar { display: none; }
+    #profile-text { height: auto; width: 1fr; }
+    #identity { height: auto; text-style: bold; color: $primary; }
     #profile { height: auto; max-height: 4; color: $text-muted; overflow-y: auto; }
     #toolbar { height: 3; padding: 0 1; }
     #toolbar Button { min-width: 10; width: auto; margin-right: 1; }
-    #phase { height: 1; padding: 0 1; color: $text-muted; }
+    #phase { height: 1; padding: 0 1; color: $secondary; text-style: bold; }
     #selectors { height: 3; }
     #session-select, #question-select { width: 1fr; margin: 0 1; }
     #body { height: 1fr; }
-    #events { width: 2fr; height: 1fr; border: round $accent; margin: 0 1; }
-    #details { width: 1fr; min-width: 20; height: 1fr; border: round $secondary; margin: 0 1; padding: 0 1; overflow-y: auto; }
+    #events { width: 2fr; height: 1fr; border: tall $primary 60%; margin: 0 1; background: $background; }
+    #events { border-title-color: $primary; border-title-style: bold; }
+    #details { width: 1fr; min-width: 20; height: 1fr; border: tall $secondary; margin: 0 1; padding: 0 1; overflow-y: auto; }
     #status { height: 1; padding: 0 1; color: $text-muted; }
-    #owner-panel { height: auto; max-height: 60%; border: round $warning; margin: 0 1; padding: 0 1; background: $surface; }
-    #owner-panel.pulse { border: round $accent; background: $warning 10%; }
+    #owner-panel { height: auto; max-height: 60%; border: thick $warning; margin: 0 1; padding: 0 1; background: $surface; }
+    #owner-panel.pulse { border: thick $primary; background: $warning 8%; }
+    Button { border: none; height: 3; text-style: bold; }
+    Button.-success { background: $primary; color: $background; }
+    Button.-error { background: $panel; color: $text; }
     #loop-title { height: 1; text-style: bold; color: $warning; }
     #loop-error { height: auto; color: $error; text-style: bold; }
     #question-detail { height: auto; max-height: 8; overflow-y: auto; }
@@ -73,9 +83,11 @@ class AgentApp(App):
         self._error_question_id: str | None = None
 
     def compose(self) -> ComposeResult:
-        with Vertical(id="profile-card"):
-            yield Static("Agent", id="identity", markup=False)
-            yield Static("", id="profile", markup=False)
+        with Horizontal(id="profile-card"):
+            yield Static("", id="avatar", markup=False)
+            with Vertical(id="profile-text"):
+                yield Static("Agent", id="identity", markup=False)
+                yield Static("", id="profile", markup=False)
         with Horizontal(id="toolbar"):
             yield Button("＋ 发起需求", id="new-request")
             yield Button("命令", id="commands")
@@ -94,7 +106,7 @@ class AgentApp(App):
                 yield Select([], prompt="选择聊天对象", id="chat-target")
             yield Static("", id="question-detail", markup=False)
             yield Static("", id="loop-error", markup=False)
-            yield Input(placeholder="输入你的回答，Enter 交还 Agent", id="owner-input")
+            yield Input(placeholder="输入我的回答，Enter 交还 Agent", id="owner-input")
             with Horizontal(id="owner-actions"):
                 yield Button("选定", id="choose-button", variant="success")
                 yield Button("批准方案", id="approve-button", variant="success")
@@ -103,11 +115,31 @@ class AgentApp(App):
         yield Static("Ctrl+N 发起需求 · Ctrl+D 详情 · Ctrl+Q 退出", id="status", markup=False)
 
     def on_mount(self) -> None:
+        self.register_theme(pixel.THEME)
+        self.theme = pixel.THEME.name
+        self._spin = 0
+        self._phase_text = ''
+        self._phase_spinning = False
         self.refresh_from_runtime()
         self.set_interval(0.25, self.refresh_from_runtime)
         self.set_interval(0.75, self._pulse_loop_in)
+        self.set_interval(0.12, self._tick_spinner)
         self.query_one("#events", RichLog).border_title = "AGENTS 先聊 · 实时交流"
-        self.query_one('#profile-card').border_title = '我的 Agent · 用户名片'
+        self.query_one('#profile-card').border_title = '▚ X-AGENT · 我的 Agent'
+
+    def _tick_spinner(self) -> None:
+        """Claude-Code-style ✻ glyph cycling in front of the phase text while working."""
+        if not self._phase_spinning:
+            return
+        self._spin = (self._spin + 1) % len(pixel.SPINNER)
+        self._show_phase()
+
+    def _show_phase(self) -> None:
+        glyph = pixel.SPINNER[self._spin] if self._phase_spinning else ''
+        try:
+            self.query_one('#phase', Static).update(f"{glyph} {self._phase_text}" if glyph else self._phase_text)
+        except NoMatches:
+            pass
 
     def refresh_from_runtime(self) -> None:
         """A short local snapshot read; the timer never waits on peer I/O."""
@@ -130,6 +162,8 @@ class AgentApp(App):
             + (f" · {brain_label}" if brain_label else "")
         )
         self.query_one('#identity', Static).update(identity if self._debug else str(agent.get('name') or '我的 Agent'))
+        self.screen.set_class(self.size.height < 20, 'compact')
+        self.query_one('#avatar', Static).update(pixel.avatar(agent.get('agent_id')))
         facts = {**(profile.get("facts") or {}), **(self._snapshot.get("memory") or {})}
         scenario = (getattr(self.runtime, 'config', {}) or {}).get('scenario') or {}
         self.query_one('#profile', Static).update(profile_view(profile, scenario, facts)['summary'])
@@ -185,7 +219,11 @@ class AgentApp(App):
             seq = int(event.get("seq") or 0)
             if seq <= self._last_event_seq:
                 continue
-            log.write(self._conversation_line(event))
+            speaker, target, text = self._conversation_parts(event)
+            peer = self._peer_name(event.get('peer_id'))
+            log.write(pixel.role_line(
+                (speaker, self._role_label(speaker, peer)),
+                (target, self._role_label(target, peer)) if target else None, text))
             self._last_event_seq = seq
 
     def _awaiting_session(self) -> dict | None:
@@ -236,8 +274,8 @@ class AgentApp(App):
         chat_id = (sent.get('payload') or {}).get('chat_id')
         reply = next((e for e in events if e['type'] == 'CHAT_REPLY'
                       and (e.get('payload') or {}).get('chat_id') == chat_id), None)
-        answer = reply['summary'] if reply else f'（{peer} 的 Agent 正在回答…）'
-        return f"你 → {peer}：{sent.get('summary')}\n{peer} 的 Agent：{answer}"
+        answer = reply['summary'] if reply else f'（{peer}的 Agent 正在回答…）'
+        return f"我 → {peer}的 Agent：{sent.get('summary')}\n{peer}的 Agent → 我：{answer}"
 
     def _choice_by_name(self, name: str) -> dict:
         """Exact name, list number (1-based), unique prefix, or a unique name
@@ -262,46 +300,107 @@ class AgentApp(App):
         peer = next((p for p in peers if p.get('agent_id') == peer_id), {})
         return str(peer.get('name') or peer_id or '对方')
 
-    def _conversation_line(self, event: dict) -> str:
+    # Four roles in every window, always named the same way:
+    #   我 (this window's owner) · 我的 Agent · X本人 · X的 Agent
+    # plus the agent's own internal checks, shown dimmed.
+    ME, MY_AGENT, PEER, PEER_AGENT, INTERNAL = 'me', 'my_agent', 'peer', 'peer_agent', 'internal'
+
+    def _role_label(self, role: str, peer: str) -> str:
+        return {self.ME: '我', self.MY_AGENT: '我的 Agent', self.PEER: f'{peer}本人',
+                self.PEER_AGENT: f'{peer}的 Agent', self.INTERNAL: '我的 Agent（内部）'}[role]
+
+    @staticmethod
+    def _decision_text(summary: str) -> str:
+        if summary.startswith('Need to confirm '):
+            return f"「{summary[len('Need to confirm '):]}」还不确定，要问我本人"
+        return {
+            'All stated conditions pass': '对方的条件我都满足',
+            'A required condition does not match': '有条件不满足',
+            'Required facts no longer establish a match': '条件已不再满足',
+            'No additional requirement needed': '不需要再补充要求',
+            'Request ready for peer delivery': '需求已准备好，发给各位候选',
+            'Waiting for missing condition evidence': '等待缺少的信息',
+            'Waiting for further evidence': '等待更多信息',
+        }.get(summary, summary)
+
+    def _question_text(self, event: dict, peer: str) -> str:
+        """Say who must answer and why: my own preference, or a fact about me."""
+        question = next((q for q in self._snapshot.get('questions') or []
+                         if q.get('question_id') == (event.get('payload') or {}).get('question_id')), None)
+        if question is None:
+            return f"需要我本人补充：{event.get('summary') or ''}"
+        label = self._field_label(str(question.get('field', '')))
+        if question.get('kind') == 'additional_requirements':
+            return f"这是我画像里没定的偏好，要我本人决定：{question.get('title') or label}（会同步给所有候选）"
+        return f"{peer} 那边要求对方「{label}」，我的 Agent 不知道，需要我本人确认：我是这样吗？"
+
+    def _conversation_parts(self, event: dict) -> tuple[str, str | None, str]:
+        """(speaker role, target role or None, text) for one event."""
         kind = event.get('type', '')
         peer = self._peer_name(event.get('peer_id'))
         payload = event.get('payload') or {}
-        detail = self._event_detail(event)
         summary = str(event.get('summary') or '')
-        headings = {
-            'REQUEST_SENT': (f'我 → {peer}', '发送需求'),
-            'REQUEST_RECEIVED': (f'{peer} → 我', '收到需求'),
-            'FILTER_RESULT': (f'我的 Agent · 筛选 {peer}', '核对已知画像'),
-            'FILTERED': (f'我的 Agent · 筛选 {peer}', '硬条件不匹配，本轮结束'),
-            'NO_MATCH': (f'{peer} → 我', '条件不匹配，本轮结束'),
-            'POLICY_DECISION': (f'我的 Agent · 决策 · {peer}', summary),
-            'QUESTION': ('我的 Agent → 你', '需要补充信息'),
-            'ANSWER': ('你 → 我的 Agent', '收到回答，继续交流'),
-            'PROPOSAL': (f'我 → {peer}', '发出合作提案'),
-            'PENDING_APPROVAL': ('我的 Agent → 你', f'已与 {peer} 形成提案，等待你确认'),
-            'CONNECTED': (f'我 ↔ {peer}', '双方已批准，结果已生成'),
-            'APPROVAL': (f'我 ↔ {peer}', '批准状态更新'),
-            'REJECTED': (f'我 ↔ {peer}', self._rejected_text(peer, summary, payload, self._session_role(event.get('session_id')))),
-            'CHAT_SENT': (f'我 → {peer} 的 Agent', f'问：{summary}'),
-            'CHAT_REPLY': (f'{peer} 的 Agent → 我', f'答：{summary}'),
-            'CHAT_RECEIVED': (f'{peer} → 我的 Agent', f'问：{summary}'),
-            'CHAT_REPLIED': ('我的 Agent 替我回答', f'答：{summary}'),
-            'PROCESSING_ERROR': ('我的 Agent · 需要处理', summary),
-        }
-        heading, text = headings.get(kind, (kind or '进展', summary))
-        return f'{heading}\n  {text}' + (f' · {detail}' if detail else '') + '\n'
+        detail = self._event_detail(event)
+        requester = self._session_role(event.get('session_id')) == 'requester'
+        me, agent, them, their_agent, inner = self.ME, self.MY_AGENT, self.PEER, self.PEER_AGENT, self.INTERNAL
+        if kind == 'REQUEST_SENT':
+            return agent, their_agent, '发出需求' + (f"：{detail.removeprefix('需求: ')}" if detail else '')
+        if kind == 'REQUEST_RECEIVED':
+            return their_agent, agent, '发来需求' + (f"：{detail.removeprefix('需求: ')}" if detail else '')
+        if kind == 'FILTER_RESULT':
+            return inner, None, f'对照我的画像核对 {peer} 的需求' + (f'：{detail}' if detail else '')
+        if kind == 'FILTERED':
+            return inner, None, f'我不满足 {peer} 的硬条件，本轮结束' + (f'：{detail}' if detail else '')
+        if kind == 'NO_MATCH':
+            return their_agent, agent, '对方不满足条件，本轮结束' + (f'：{detail}' if detail else '')
+        if kind == 'POLICY_DECISION':
+            text = self._decision_text(summary)
+            return inner, None, f'关于 {peer}：{text}' + (f' · {detail}' if detail else '')
+        if kind == 'QUESTION':
+            return agent, me, self._question_text(event, peer)
+        if kind == 'ANSWER':
+            who = me
+            text = f'回答：{detail}' if detail else '已回答'
+            if payload.get('proxy'):
+                text += '（演示脚本代答）'
+            return who, agent, text
+        if kind == 'PROPOSAL':
+            return agent, their_agent, '条件都对上了，发出见面提案' + (f' · {detail}' if detail else '')
+        if kind == 'PENDING_APPROVAL':
+            if requester:
+                return agent, me, f'与 {peer} 的提案已就绪，等我选择'
+            return agent, me, f'与 {peer} 的提案已就绪，等 {peer}本人 选择'
+        if kind == 'APPROVAL':
+            if summary == 'Owner approved proposal':
+                return (me, them, f'我选定了 {peer}，等对方确认') if requester else (me, them, f'我接受了 {peer} 的选择')
+            return (them, me, f'{peer}本人 接受了我的选择') if requester else (them, me, f'{peer}本人 选择了我，等我确认')
+        if kind == 'CONNECTED':
+            return me, them, '双方本人都已确认，见面提案已生成'
+        if kind == 'REJECTED':
+            if summary == 'Owner rejected proposal':
+                return me, them, f'我婉拒了 {peer}' if requester else f'我婉拒了 {peer} 的选择'
+            if payload.get('reason') == 'owner rejected proposal':
+                if requester:
+                    return them, me, f'{peer}本人 婉拒了我的选择，可以在剩下的候选里重新选'
+                return them, me, f'{peer}本人 选择了其他人'
+            return their_agent, agent, f'{self._decision_text(summary)}，本轮结束'
+        if kind == 'CHAT_SENT':
+            return me, their_agent, f'问：{summary}'
+        if kind == 'CHAT_REPLY':
+            return their_agent, me, f'答：{summary}'
+        if kind == 'CHAT_RECEIVED':
+            return them, agent, f'问：{summary}'
+        if kind == 'CHAT_REPLIED':
+            return agent, them, f'（替我）答：{summary}'
+        if kind == 'PROCESSING_ERROR':
+            return inner, None, f'处理出错：{summary}' + (f' · {detail}' if detail else '')
+        return inner, None, summary + (f' · {detail}' if detail else '')
 
-    @staticmethod
-    def _rejected_text(peer: str, summary: str, payload: dict, role: str | None = None) -> str:
-        # Owner declines are recorded distinctly by the runtime; anything
-        # else (e.g. the peer agent's own policy) keeps the neutral wording.
-        if summary == 'Owner rejected proposal':
-            return f'你婉拒了与 {peer} 的提案'
-        if payload.get('reason') == 'owner rejected proposal':
-            if role == 'requester':
-                return f'{peer} 婉拒了你的选择，可以在剩下的候选里重新选'
-            return f'{peer} 婉拒了提案（对方已选择其他人）'
-        return '本轮协商已结束'
+    def _conversation_line(self, event: dict) -> str:
+        speaker, target, text = self._conversation_parts(event)
+        peer = self._peer_name(event.get('peer_id'))
+        heading = self._role_label(speaker, peer) + (f' → {self._role_label(target, peer)}' if target else '')
+        return f'{heading}\n  {text}\n'
 
     def _session_role(self, session_id) -> str | None:
         session = next((s for s in self._snapshot.get('sessions') or [] if s.get('session_id') == session_id), None)
@@ -424,7 +523,7 @@ class AgentApp(App):
         if manual:
             key = ('composer', self._composer)
             title = '发起新需求' if self._composer == 'request' else '命令'
-            content = '描述你的目标，提交后由 Agents 开始交流。' if self._composer == 'request' else '/help 查看命令 · Esc 返回交流'
+            content = '描述我的目标，提交后由 Agents 开始交流。' if self._composer == 'request' else '/help 查看命令 · Esc 返回交流'
             field.placeholder = '输入需求，Enter 广播' if self._composer == 'request' else '输入 /help、/retry 消息ID 等命令'
             input_visible = True
         elif stale_draft:
@@ -434,26 +533,30 @@ class AgentApp(App):
             input_visible = True
         elif question:
             key = ('question', question['question_id'])
-            title = f'◆ 需要你参与 · 补充信息' + (f' · 待答 {len(questions)} 项' if len(questions) > 1 else '')
+            title = '◆ 需要我本人回答' + (f' · 还有 {len(questions)} 项' if len(questions) > 1 else '')
             session = next((s for s in sessions if s.get('session_id') == question.get('session_id')), {})
-            scope = f"与 {self._peer_name(session.get('peer_id'))} 的交流" if question.get('scope') == 'session' else '本次需求 · 对所有候选生效'
-            reason = question.get('reason') or question.get('title') or question.get('field')
-            # Existing saved questions may still contain the old format instruction.
-            reason = reason.replace('请回答是或否。', '').replace('回答是或否。', '')
-            content = f"{scope}\n{reason}"
-            field.placeholder = '用自己的话回答，Enter 提交'
+            peer = self._peer_name(session.get('peer_id'))
+            label = self._field_label(str(question.get('field', '')))
+            if question.get('kind') == 'additional_requirements':
+                content = (f"我的 Agent 在问我一个偏好（我画像里没定）：\n{question.get('title') or label}\n"
+                           "我的回答会作为新要求，同步给所有候选。")
+            else:
+                content = (f"{peer} 那边要求对方「{label}」。我的 Agent 不知道我是不是，\n"
+                           f"需要我本人确认：我是否{label}？")
+            field.placeholder = ('用自己的话回答，Enter 提交' if self._snapshot.get('mode') != 'deterministic'
+                                 else '回答 是 或 否（数字题填数字），Enter 提交')
             input_visible = True
         elif awaiting:
             peer = self._peer_name(awaiting.get('peer_id'))
             key = ('awaiting', awaiting['session_id'])
             title = f'◆ 已选定 {peer} · 等待对方回应'
             content = (f"{peer} 接受后生成见面提案，其余候选随之婉拒；\n"
-                       f"{peer} 婉拒的话，你可以在剩下的候选里重新选。")
+                       f"{peer} 婉拒的话，我可以在剩下的候选里重新选。")
         elif target:
             # Proposals wait on me: chat with the picked candidate's agent, then choose.
             peer = self._peer_name(target.get('peer_id'))
             key = ('choice', tuple(sorted(s['session_id'] for s in choices)))
-            title = f'◆ 需要你参与 · {len(choices)} 选 1' if len(choices) > 1 else '◆ 需要你参与 · 还剩 1 位候选'
+            title = f'◆ 需要我选择 · {len(choices)} 选 1' if len(choices) > 1 else '◆ 需要我选择 · 还剩 1 位候选'
             content = ("直接打字 → 问对方的 Agent（按对方画像回答）\n"
                        "Ctrl+↑/↓ 或下拉框切换对象 · 想好了点「选定」，对方本人确认后成局")
             latest = self._latest_chat({target['session_id']})
@@ -471,12 +574,14 @@ class AgentApp(App):
             if approval.get('role') == 'provider':
                 answered = sum(1 for e in self._snapshot.get('events') or []
                                if e.get('type') == 'CHAT_REPLIED' and e.get('session_id') == approval['session_id'])
-                title = f'◆ {peer} 选择了你 · 是否接受？'
-                content = (f"与 {peer} 的提案\n{requirements}\n"
-                           + (f"你的 Agent 刚才替你回答了 {answered} 个问题，见上方对话区。\n" if answered else '')
-                           + "接受后生成见面提案；婉拒则结束本轮。")
+                title = f'◆ {peer}本人 选择了我 · 是否接受？'
+                # Compact: candidate windows are short in the demo layout.
+                conditions = ' · '.join(self._format_requirement(r) for r in terms.get('requirements', []))
+                content = (f"条件：{conditions}\n"
+                           + (f"我的 Agent 刚才替我回答了 {answered} 个问题（见上方）。" if answered else '')
+                           + "接受即生成见面提案。")
             else:
-                title = '◆ 需要你参与 · 确认方案'
+                title = '◆ 需要我确认 · 见面方案'
                 content = f"与 {peer} 的提案\n{requirements}\n批准后等待双方确认；拒绝则结束本轮。"
             provider = approval.get('role') == 'provider'
             self.query_one('#approve-button', Button).label = '接受' if provider else '批准方案'
@@ -505,10 +610,14 @@ class AgentApp(App):
             self.query_one('#events', RichLog).focus()
         self._loop_key = key if panel.display else None
         pending = (self._snapshot.get('metrics') or {}).get('pending_inbox', 0)
-        if self._busy or pending:
-            phase = '● Agent 正在处理与交流…'
+        chat_phase = self._pending_chat_phase()
+        spinning = bool(chat_phase or self._busy or pending)
+        if chat_phase:
+            phase = chat_phase
+        elif self._busy or pending:
+            phase = 'Agent 正在交流…'
         elif self._needs_owner:
-            phase = '◆ 等待你参与'
+            phase = '◆ 等我操作'
         elif awaiting:
             phase = f"● 等待 {self._peer_name(awaiting.get('peer_id'))} 回应…"
         elif any(s.get('state') == 'PENDING_APPROVAL' and s.get('role') == 'provider'
@@ -517,10 +626,26 @@ class AgentApp(App):
         elif any(s.get('state') == 'PENDING_APPROVAL' for s in sessions):
             phase = '● 等待对方确认'
         elif any(s.get('state') in {'ACTIVE', 'PROPOSED', 'WAITING_INPUT'} for s in sessions):
-            phase = '● Agents 交流中 · 暂不需要你操作'
+            phase = '● Agents 交流中 · 暂不需要我操作'
         else:
             phase = '● Agent 待命 · 收到需求后自动交流'
-        self.query_one('#phase', Static).update(phase)
+        self._phase_text, self._phase_spinning = phase, spinning
+        self._show_phase()
+
+    def _pending_chat_phase(self) -> str:
+        """Thinking text while a chat question waits for its model reply."""
+        events = self._snapshot.get('events') or []
+        done = {(e.get('payload') or {}).get('chat_id') for e in events if e.get('type') in {'CHAT_REPLY', 'CHAT_REPLIED'}}
+        for e in reversed(events):
+            chat_id = (e.get('payload') or {}).get('chat_id')
+            if chat_id in done:
+                continue
+            peer = self._peer_name(e.get('peer_id'))
+            if e.get('type') == 'CHAT_SENT':
+                return f'{peer} 的 Agent 正在想怎么回答…'
+            if e.get('type') == 'CHAT_RECEIVED':
+                return f'我的 Agent 正在替我回答 {peer}本人 的问题…'
+        return ''
 
     def _pulse_loop_in(self) -> None:
         panel = self.query_one('#owner-panel')
@@ -634,7 +759,7 @@ class AgentApp(App):
             await self._dispatch(line, draft_question_id)
             self._composer = None
         except Exception as exc:
-            self._set_status(f"Action error: {exc}")
+            self._set_status(f"没有成功：{exc}")
             self._loop_error = '✗ ' + self._friendly_error(exc)
             restored = original_text if original_text is not None else line
             self._failed_text = restored
@@ -660,7 +785,7 @@ class AgentApp(App):
         if line.startswith("@"):
             name, _, text = line[1:].partition(" ")
             if not text.strip():
-                raise ValueError("需要补充：格式是 @名字 问题，例如 @陈语桐 你周末一般怎么过？")
+                raise ValueError("需要补充：格式是 @名字 问题，例如 @陈语桐 她周末一般怎么过？")
             session = self._choice_by_name(name)
             self._chat_target = session["session_id"]
             await self.runtime.chat(session["session_id"], text.strip())
@@ -690,7 +815,7 @@ class AgentApp(App):
             if len(parts) < 2 or not line.partition(" ")[2].strip():
                 raise ValueError("usage: /request TEXT")
             await self.runtime.broadcast(line.partition(" ")[2].strip())
-            self._set_status("Request submitted")
+            self._set_status("需求已发出")
             return
         if command in {"/answer", "/remember"}:
             if len(parts) < 3:
@@ -720,7 +845,7 @@ class AgentApp(App):
             self._set_status(f"已发给 {self._peer_name(session.get('peer_id'))} 的 Agent")
         else:
             await self.runtime.broadcast(line)
-            self._set_status("Request submitted")
+            self._set_status("需求已发出")
 
     async def _answer(self, question_id: str, text: str, *, remember: bool = False) -> None:
         question = next((q for q in self._snapshot.get("questions") or [] if q.get("question_id") == question_id and not q.get("answered")), None)
@@ -729,7 +854,7 @@ class AgentApp(App):
         if remember and (question.get("kind") != "fact" or question.get("scope") != "session"):
             raise ValueError("only a confirmed personal fact can be remembered")
         await self.runtime.answer(question_id, text, remember=remember, expected_revision=question.get("revision"))
-        self._set_status(("Remembered " if remember else "Answered ") + question_id)
+        self._set_status("已回答，我的 Agent 继续交流" + ("（已记住）" if remember else ""))
 
     async def _approve(self, session_id: str, approve: bool) -> None:
         session = next((s for s in self._snapshot.get("sessions") or [] if s.get("session_id") == session_id), None)
@@ -739,13 +864,14 @@ class AgentApp(App):
         if not proposal or not proposal.get("digest"):
             raise ValueError(f"no proposal displayed for {session_id}")
         await self.runtime.approve(session_id, approve, proposal_digest=proposal["digest"], expected_revision=session.get("revision"))
-        self._set_status(("Approved " if approve else "Rejected ") + session_id)
+        peer = self._peer_name(session.get("peer_id"))
+        self._set_status(f"我接受了 {peer} 的选择" if approve else f"我婉拒了 {peer}")
 
     @staticmethod
     def _friendly_error(exc: Exception) -> str:
         text = str(exc)
         if text.endswith('answer must be yes/no'):
-            return '还不能确定你的意思，请补充说明。'
+            return '还不能确定我的意思，请补充说明。'
         if text.endswith('answer must be a number'):
             return '这里需要一个数字，例如 20。'
         if text.endswith('answer must be text'):

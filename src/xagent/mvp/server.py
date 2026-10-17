@@ -48,7 +48,8 @@ def create_peer_app(runtime: AgentRuntime) -> FastAPI:
     async def answers(request: Request, body: dict):
         owner(request)
         try:
-            return await runtime.answer(body.get("question_id", ""), body.get("text", ""), body.get("remember", False), body.get("expected_revision"))
+            return await runtime.answer(body.get("question_id", ""), body.get("text", ""), body.get("remember", False), body.get("expected_revision"),
+                                        proxy=body.get("proxy") is True)
         except (PermissionError, ValueError) as exc:
             fail(exc)
 

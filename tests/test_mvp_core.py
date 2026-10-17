@@ -490,3 +490,15 @@ async def test_concurrent_answers_remember_each_field_without_overwrite(tmp_path
     await asyncio.gather(*(runtime.answer(q['question_id'], '20' if q['field']=='hours' else '是', remember=True)
                           for q in runtime.snapshot()['questions']))
     assert runtime.snapshot()['memory'] == {'hours':20,'remote':True}
+
+
+@pytest.mark.asyncio
+async def test_proxy_flag_reaches_answer_event(tmp_path):
+    runtime = AgentRuntime(config(tmp_path, "provider-p", ["requester-p"], facts={}), policy=TestPolicy())
+    session = runtime._new_session("s-p", "r-p", "requester-p", "provider", [{"field": "hours", "op": "gte", "value": 18}])
+    runtime.storage.put("session", "s-p", session)
+    await runtime._provider_filter(session, "evaluate", None)
+    question = next(q for q in runtime.snapshot()["questions"] if not q["answered"])
+    await runtime.answer(question["question_id"], "20", expected_revision=question["revision"], proxy=True)
+    answers = [e for e in runtime.storage.events() if e["type"] == "ANSWER"]
+    assert answers and answers[-1]["payload"].get("proxy") is True
