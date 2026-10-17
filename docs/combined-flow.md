@@ -9,7 +9,10 @@ X-Agent 的完整故事是两幕，分别由仓库的两套代码承载，现在
 （Directional Fit）→ 调和平均合并，产出带理由的排名。
 以阿哲为例：林小满 0.935、陈语桐 0.590、苏晴 0.495 上榜；
 沈亦舟被异地硬门淘汰、陆蔓被吸烟 dealbreaker 淘汰。
-这一幕就是 GitHub Pages 演示（`demo/`）呈现的内容。
+随后阿哲反馈「她太安静了」，外向程度变成门槛偏好，排名变为
+陈语桐 0.590、方糖 0.462、林小满 0.421——红线移到陈语桐。
+这一幕就是 GitHub Pages 演示（`demo/`）呈现的内容；第二幕从反馈后的
+排名接着走（`--no-feedback` 可改用默认排名）。
 
 ## 第二幕 · 用户视角（`src/xagent/mvp/`）
 
@@ -22,8 +25,9 @@ X-Agent 的完整故事是两幕，分别由仓库的两套代码承载，现在
 3. 画像里没定的偏好（本场景：是否要求对方对要孩子持开放态度）
    由系统**当场补问主角本人**，新条件实时同步给所有进行中的会话；
 4. 候选人被问到未公开的事实时，由其 Agent 询问本人确认；
-5. 条件全过 → 主角 Agent 发提案 → 双方 Agent 核对 →
-   **双方本人批准** → 生成一致的「见面提案」结果卡。
+5. 条件全过 → 主角 Agent 发提案 → 双方 Agent 核对；
+6. 所有提案到齐后，主角**只批准排名第一的一位**，其余婉拒 →
+   双方本人批准 → 生成唯一一份「见面提案」结果卡（陈语桐）。
 
 ## 桥接设计（`scripts/run_combined.py` + `configs/mvp/dating-match.json`）
 
@@ -51,6 +55,14 @@ X-Agent 的完整故事是两幕，分别由仓库的两套代码承载，现在
 # 产出 .local/combined/<user>-<时间>/TRANSCRIPT.md + result.json
 ```
 
+一条命令两幕连演（适合录屏）：浏览器自动播放第一幕网页，终端里
+四个 Agent 界面分屏；讲完网页后在终端按 Enter 开始第二幕自动协商：
+
+```bash
+bash scripts/demo_tui.sh            # --delay 3 可放慢每一步
+# 退出：Ctrl+B 再按 D，或 tmux kill-session -t xagent-demo
+```
+
 现场手动（TUI 四窗口，适合路演互动）：
 
 ```bash
@@ -60,4 +72,5 @@ X-Agent 的完整故事是两幕，分别由仓库的两套代码承载，现在
 ```
 
 样例输出见 `docs/combined-transcript-sample.md`（自动模式真实运行
-记录：三位候选全部 CONNECTED，各生成一份见面提案）。
+记录：陈语桐 CONNECTED 生成唯一一份见面提案，方糖、林小满被婉拒
+REJECTED），对话视图见 `docs/combined-dialogue-sample.md`。

@@ -130,8 +130,10 @@ class AgentApp(App):
         session_options = [
             (escape(f"{i + 1}. {self._peer_name(s.get('peer_id'))} · " +
                     (f"{s.get('state')} · {str(s.get('session_id'))[:8]}" if self._debug else
-                     {'PENDING_APPROVAL':'待确认方案', 'CONNECTED':'已达成合作', 'NO_MATCH':'不匹配',
-                      'REJECTED':'已结束', 'WAITING_INPUT':'等待补充', 'ACTIVE':'交流中', 'PROPOSED':'已提出方案'}.get(s.get('state'), '交流中'))), str(s['session_id']))
+                     # NO_MATCH after a proposal means the other owner declined it.
+                     ('对方已婉拒' if s.get('state') == 'NO_MATCH' and s.get('proposal') else
+                      {'PENDING_APPROVAL':'待确认方案', 'CONNECTED':'已达成合作', 'NO_MATCH':'不匹配',
+                       'REJECTED':'已婉拒', 'WAITING_INPUT':'等待补充', 'ACTIVE':'交流中', 'PROPOSED':'已提出方案'}.get(s.get('state'), '交流中')))), str(s['session_id']))
             for i, s in enumerate(sessions) if s.get('session_id')
         ]
         if session_options != self._session_options:
@@ -197,11 +199,21 @@ class AgentApp(App):
             'PENDING_APPROVAL': ('我的 Agent → 你', f'已与 {peer} 形成提案，等待你确认'),
             'CONNECTED': (f'我 ↔ {peer}', '双方已批准，结果已生成'),
             'APPROVAL': (f'我 ↔ {peer}', '批准状态更新'),
-            'REJECTED': (f'我 ↔ {peer}', '本轮协商已结束'),
+            'REJECTED': (f'我 ↔ {peer}', self._rejected_text(peer, summary, payload)),
             'PROCESSING_ERROR': ('我的 Agent · 需要处理', summary),
         }
         heading, text = headings.get(kind, (kind or '进展', summary))
         return f'{heading}\n  {text}' + (f' · {detail}' if detail else '') + '\n'
+
+    @staticmethod
+    def _rejected_text(peer: str, summary: str, payload: dict) -> str:
+        # Owner declines are recorded distinctly by the runtime; anything
+        # else (e.g. the peer agent's own policy) keeps the neutral wording.
+        if summary == 'Owner rejected proposal':
+            return f'你婉拒了与 {peer} 的提案'
+        if payload.get('reason') == 'owner rejected proposal':
+            return f'{peer} 婉拒了提案（对方已选择其他人）'
+        return '本轮协商已结束'
 
     def _field_label(self, field: str) -> str:
         config = getattr(self.runtime, "config", {}) or {}

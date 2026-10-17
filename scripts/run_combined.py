@@ -42,22 +42,29 @@ import httpx
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from core.match import hard_filter, rank_pool  # noqa: E402
+from core.match import apply_feedback, hard_filter, rank_pool  # noqa: E402
+from scripts.build_demo_data import FEEDBACK  # noqa: E402
 
 LAUNCHER = ROOT / "scripts" / "run_agent.py"
 SCENARIO_PATH = ROOT / "configs" / "mvp" / "dating-match.json"
-TERMINAL = {"CONNECTED", "NO_MATCH", "DECLINED", "CANCELLED", "ERROR"}
+TERMINAL = {"CONNECTED", "NO_MATCH", "DECLINED", "REJECTED", "CANCELLED",
+            "ERROR"}
 
 
 # ---------------------------------------------------------------- phase A
 
-def admin_ranking(user_id: str, top: int) -> dict:
+def admin_ranking(user_id: str, top: int, feedback: bool = True) -> dict:
+    """Rank the pool; with feedback, apply the same 「太安静了」 step as the
+    web demo (demo/) so act 2 starts from the ranking the audience last saw.
+    The #1 candidate is the one the protagonist will actually meet."""
     personas = json.loads((ROOT / "data" / "personas.json").read_text())
     scenario = json.loads((ROOT / "scenarios" / "dating.json").read_text())
     by_id = {p["id"]: p for p in personas}
     user = by_id[user_id]
     pool = [p for p in personas if p["id"] != user_id]
-    ranked = rank_pool(user, pool, scenario)
+    default = rank_pool(user, pool, scenario)
+    ranked = (apply_feedback(default, FEEDBACK["trait_min"], FEEDBACK["penalty"])
+              if feedback else default)
     passed = [r for r in ranked if r["passed"]]
     filtered = []
     for p in pool:
@@ -65,7 +72,9 @@ def admin_ranking(user_id: str, top: int) -> dict:
         if failed:
             filtered.append({"candidate": by_id[p["id"]], "failed_rules": failed})
     return {"user": user, "top": passed[:top],
-            "runner_up": passed[top:top + 2], "filtered": filtered}
+            "runner_up": passed[top:top + 2], "filtered": filtered,
+            "default_top": [r for r in default if r["passed"]][:top],
+            "feedback": FEEDBACK if feedback else None}
 
 
 def demand_requirements(user: dict) -> list:
@@ -184,7 +193,8 @@ class AgentProc:
         return self.call("GET", "/owner/state")
 
     def healthy(self) -> bool:
-        if self.proc.poll() is not None:
+        # proc is None when attached to an agent someone else started (TUI).
+        if self.proc is not None and self.proc.poll() is not None:
             return False
         try:
             return httpx.get(self.url + "/health", timeout=0.3,
@@ -203,8 +213,17 @@ def wait_for(predicate, label: str, timeout: float = 30):
     raise TimeoutError(f"timed out: {label}")
 
 
-def drive(agents: list, admin: dict, followup_answer: str) -> dict:
-    """Auto-owner: answer questions from persona truth, approve proposals."""
+def drive(agents: list, admin: dict, followup_answer: str,
+          delay: float = 0.0) -> dict:
+    """Auto-owner: answer questions from persona truth, then pick one.
+
+    The protagonist waits until every candidate has reached a proposal,
+    approves only the #1 ranked candidate (agent-2) and rejects the rest;
+    only the chosen candidate's owner approves. Result: one meeting.
+
+    delay pauses after each owner action so a watching audience (attached
+    TUI windows) can follow every step.
+    """
     user = admin["user"]
     people = {}
     roster = [user] + [r["candidate"] for r in admin["top"]]
@@ -215,8 +234,10 @@ def drive(agents: list, admin: dict, followup_answer: str) -> dict:
     requester.call("POST", "/owner/requests",
                    {"text": demand_text,
                     "requirements": demand_requirements(user)})
+    time.sleep(delay)
 
-    answered, approved = set(), set()
+    chosen = "agent-2"
+    answered, decided = set(), set()
     deadline = time.monotonic() + 120
     while time.monotonic() < deadline:
         for agent in agents:
@@ -233,21 +254,33 @@ def drive(agents: list, admin: dict, followup_answer: str) -> dict:
                            {"question_id": q["question_id"], "text": text,
                             "expected_revision": q["revision"]})
                 answered.add(q["question_id"])
+                time.sleep(delay)
+        req_sessions = requester.state()["sessions"]
+        all_proposed = len(req_sessions) == len(agents) - 1 and all(
+            s["state"] == "PENDING_APPROVAL" or s["state"] in TERMINAL
+            for s in req_sessions)
         for agent in agents:
+            me = agent.cfg["agent_id"]
+            if me == "agent-1" and not all_proposed:
+                continue  # protagonist compares all proposals first
+            if me not in ("agent-1", chosen):
+                continue  # not chosen: wait for the protagonist's decline
             for s in agent.state()["sessions"]:
-                key = (agent.cfg["agent_id"], s["session_id"])
+                key = (me, s["session_id"])
                 if s["state"] == "PENDING_APPROVAL" and s.get("proposal") \
-                        and key not in approved:
+                        and key not in decided:
                     agent.call("POST", "/owner/approvals",
-                               {"session_id": s["session_id"], "approve": True,
+                               {"session_id": s["session_id"],
+                                "approve": me == chosen or s["peer_id"] == chosen,
                                 "proposal_digest": s["proposal"]["digest"],
                                 "expected_revision": s["revision"]})
-                    approved.add(key)
+                    decided.add(key)
+                    time.sleep(delay)
         states = [s["state"] for s in requester.state()["sessions"]]
         if states and all(st in TERMINAL for st in states):
             break
         time.sleep(0.3)
-    return {"answered": sorted(answered), "approved": len(approved)}
+    return {"answered": sorted(answered), "decided": len(decided)}
 
 
 # ---------------------------------------------------------------- output
@@ -261,6 +294,13 @@ def write_transcript(admin: dict, agents: list, workdir: Path) -> dict:
     lines = [f"# 结合演示：{user['name']}的匹配 → 协商全记录", "",
              "## 第一幕 · 管理员视角（匹配引擎 core/match.py）", "",
              "引擎对候选池完成硬门过滤 + 双向契合打分，排名如下：", ""]
+    fb = admin.get("feedback")
+    if fb:
+        default = "、".join(f"{r['candidate']['name']} {r['score']:.3f}"
+                            for r in admin["default_top"])
+        lines += [f"默认排名：{default}。", "",
+                  f"{user['name']}反馈：「{fb['text']}」{fb['note']}", "",
+                  "反馈后的排名（第二幕从这里接着走）：", ""]
     for i, row in enumerate(admin["top"], 1):
         c = row["candidate"]
         result["ranking"].append(
@@ -274,8 +314,9 @@ def write_transcript(admin: dict, agents: list, workdir: Path) -> dict:
                      f"{'；'.join(f['failed_rules'])}")
     lines += ["", "## 第二幕 · 用户视角（去中心化协商 src/xagent/mvp）", "",
               "上榜的候选各自由自己的 Agent 出面，与主角的 Agent 逐一核对"
-              "硬条件、补问画像未定的偏好、互发提案；双方本人批准后生成"
-              "见面提案。", ""]
+              "硬条件、补问画像未定的偏好、互发提案。所有提案到齐后，"
+              f"{user['name']}只批准排名第一的一位，其余婉拒——最终只见一个人。",
+              ""]
     for i, row in enumerate(admin["top"], 1):
         c = row["candidate"]
         peer_id = f"agent-{i + 1}"
@@ -295,6 +336,9 @@ def write_transcript(admin: dict, agents: list, workdir: Path) -> dict:
         if art:
             lines.append(f"- 🎉 **{art['title']}**已生成（digest "
                          f"{art['proposal_digest'][:12]}…）：{art['next_step']}")
+        elif sess.get("state") == "REJECTED":
+            lines.append(f"- 条件都对上了，但{user['name']}只确认排名第一的"
+                         f"{admin['top'][0]['candidate']['name']}，婉拒了这份提案。")
         lines.append("")
     (workdir / "TRANSCRIPT.md").write_text("\n".join(lines))
     (workdir / "result.json").write_text(
@@ -314,15 +358,35 @@ def main():
                         help="只生成 agent 配置并打印 TUI 启动命令")
     parser.add_argument("--keep", action="store_true",
                         help="跑完不停止 agent 进程")
+    parser.add_argument("--attach", metavar="DIR",
+                        help="连接 --configs-only 生成目录里已开着的 TUI 窗口，"
+                             "自动代答，不另起进程")
+    parser.add_argument("--delay", type=float, default=None,
+                        help="每个自动操作后的停顿秒数（--attach 默认 1.5，否则 0）")
+    parser.add_argument("--no-feedback", action="store_true",
+                        help="不应用网页里的「太安静了」反馈，用默认排名")
+    parser.add_argument("--wait-enter", action="store_true",
+                        help="开始协商前等待按 Enter（先讲完网页第一幕）")
     args = parser.parse_args()
+    delay = args.delay if args.delay is not None else (1.5 if args.attach else 0.0)
 
-    admin = admin_ranking(args.user, args.top)
-    stamp = time.strftime("%Y%m%d-%H%M%S")
-    workdir = ROOT / ".local" / "combined" / f"{args.user}-{stamp}"
-    workdir.mkdir(parents=True, exist_ok=True)
-    configs = build_configs(admin, workdir)
+    admin = admin_ranking(args.user, args.top, feedback=not args.no_feedback)
+    if args.attach:
+        workdir = Path(args.attach).resolve()
+        configs = [json.loads((workdir / f"agent-{n}.json").read_text())
+                   for n in range(1, args.top + 2)]
+        roster = [admin["user"]] + [r["candidate"] for r in admin["top"]]
+        if [c["name"] for c in configs] != [p["name"] for p in roster]:
+            sys.exit(f"{workdir} 里的配置与 --user {args.user} --top "
+                     f"{args.top} 的排名不一致")
+    else:
+        stamp = time.strftime("%Y%m%d-%H%M%S")
+        workdir = ROOT / ".local" / "combined" / f"{args.user}-{stamp}"
+        workdir.mkdir(parents=True, exist_ok=True)
+        configs = build_configs(admin, workdir)
 
-    print(f"【管理员视角】{admin['user']['name']}的 Top {args.top}：")
+    print(f"【管理员视角】{admin['user']['name']}的 Top {args.top}"
+          f"{'（已应用反馈：' + admin['feedback']['text'] + '）' if admin['feedback'] else ''}：")
     for i, row in enumerate(admin["top"], 1):
         print(f"  {i}. {row['candidate']['name']}  {row['score']:.3f}")
     for f in admin["filtered"]:
@@ -337,20 +401,29 @@ def main():
                   f"--config {workdir}/agent-{n}.json")
         print("在 agent-1 窗口按 Ctrl+N 输入需求，或 /request "
               "想找一位同城、不抽烟的约会对象")
+        print("或自动代答（窗口里能看到每一步）：\n  .venv/bin/python "
+              f"scripts/run_combined.py --attach {workdir}"
+              f"{' --no-feedback' if args.no_feedback else ''}")
         return
 
     agents = [AgentProc(cfg, workdir) for cfg in configs]
     try:
-        for a in agents:
-            a.start()
+        if not args.attach:
+            for a in agents:
+                a.start()
         for a in agents:
             wait_for(a.healthy, f"{a.cfg['agent_id']} starts", timeout=15)
-        print("【用户视角】4 个 Agent 已上线，开始协商…")
-        drive(agents, admin, args.followup_answer)
+        if args.wait_enter:
+            input(f"{len(agents)} 个 Agent 已上线。讲完网页第一幕后，"
+                  "按 Enter 开始第二幕…")
+        print(f"【用户视角】{len(agents)} 个 Agent 已上线，开始协商…")
+        drive(agents, admin, args.followup_answer, delay)
         result = write_transcript(admin, agents, workdir)
         print("协商结果：")
         for name, state in result["sessions"].items():
             print(f"  {name}: {state}")
+        met = [n for n, s in result["sessions"].items() if s == "CONNECTED"]
+        print(f"最终见面：{'、'.join(met) or '无'}")
         print(f"全记录：{workdir / 'TRANSCRIPT.md'}")
     finally:
         if not args.keep:
@@ -388,8 +461,10 @@ def render_dialogue(admin: dict, snaps: dict, workdir: Path) -> None:
                   if e.get("peer_id") == "agent-1"]
         out.append(f"## 与{c['name']}的 Agent（契合分 {row['score']:.3f}）")
         out.append("")
-        seen = set()
-        merged = [(e, "req") for e in mine] + [(e, "prov") for e in theirs]
+        seen, approvals_shown = set(), set()
+        approval_line = {"req": f"**{user['name']}**：提案我看了，批准 ✅",
+                         "prov": f"**{c['name']}**：我也批准 ✅"}
+        merged =[(e, "req") for e in mine] + [(e, "prov") for e in theirs]
         merged.sort(key=lambda t: t[0].get("timestamp", ""))
         for e, side in merged:
             t = e.get("type")
@@ -404,8 +479,8 @@ def render_dialogue(admin: dict, snaps: dict, workdir: Path) -> None:
                 status = (e.get("payload") or {}).get("status")
                 if status == "PASS":
                     checks = "、".join(
-                        f"{FIELD_LABELS.get(k, k)} ✓" for k in agreed
-                        if k != "kids_open") or "硬条件"
+                        f"{FIELD_LABELS.get(r['field'], r['field'])} ✓"
+                        for r in reqs) or "硬条件"
                     out.append(f"**{c['name']}的 Agent**：收到，我在本地核对了"
                                f"——{checks}，都符合。")
                 elif status == "UNKNOWN":
@@ -424,7 +499,8 @@ def render_dialogue(admin: dict, snaps: dict, workdir: Path) -> None:
                 out.append(f"**{c['name']}的 Agent** → {c['name']}："
                            f"对方想确认——你对要孩子持开放态度吗？")
             elif t == "ANSWER" and side == "prov":
-                val = agreed.get("kids_open")
+                # Declined sessions have no artifact; answer came from persona.
+                val = agreed.get("kids_open", kids_open(c))
                 out.append(f"**{c['name']}**："
                            f"{'是的，我持开放态度。' if val else '这个我比较确定不要。'}")
             elif t == "PROPOSAL" and side == "req":
@@ -432,15 +508,20 @@ def render_dialogue(admin: dict, snaps: dict, workdir: Path) -> None:
                            f"我正式发出一份「见面提案」。")
             elif t == "PENDING_APPROVAL" and side == "req":
                 out.append("（提案已送达双方，等待两位本人确认…）")
-            elif t == "APPROVAL" and side == "req" \
-                    and "Owner approved" in (e.get("summary") or ""):
-                out.append(f"**{user['name']}**：提案我看了，批准 ✅")
-            elif t == "APPROVAL" and side == "prov" \
-                    and "Owner approved" in (e.get("summary") or ""):
-                out.append(f"**{c['name']}**：我也批准 ✅")
+            elif t == "APPROVAL" and "Owner approved" in (e.get("summary") or ""):
+                out.append(approval_line[side])
+                approvals_shown.add(side)
             elif t == "CONNECTED" and side == "req":
+                # The second approver logs CONNECTED, not APPROVAL.
+                for s in ("req", "prov"):
+                    if s not in approvals_shown:
+                        out.append(approval_line[s])
                 out.append(f"🎉 **见面提案达成**——双方 Agent 核对一致、"
                            f"双方本人均已批准，接下来由真人自行联系。")
+            elif t == "REJECTED" and side == "req":
+                top1 = admin["top"][0]["candidate"]["name"]
+                out.append(f"**{user['name']}**：条件都对上了，谢谢。不过这次我"
+                           f"只想认真认识一位——我选了{top1}，这份提案就婉拒了。")
         out.append("")
     (workdir / "DIALOGUE.md").write_text("\n".join(out))
 

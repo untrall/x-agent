@@ -15,13 +15,22 @@ from scripts.run_combined import (  # noqa: E402
 
 
 def test_admin_ranking_top3_and_filtered():
-    admin = admin_ranking("azhe", 3)
+    admin = admin_ranking("azhe", 3, feedback=False)
     ids = [row["candidate"]["id"] for row in admin["top"]]
     assert ids == ["xiaoman", "yutong", "suqing"]
     scores = [row["score"] for row in admin["top"]]
     assert scores == sorted(scores, reverse=True)
     filtered_ids = {f["candidate"]["id"] for f in admin["filtered"]}
     assert {"yizhou", "luman"} <= filtered_ids
+
+
+def test_admin_ranking_follows_web_demo_feedback():
+    # Same 「太安静了」 step as demo/: the red thread moves to 陈语桐.
+    admin = admin_ranking("azhe", 3)
+    ids = [row["candidate"]["id"] for row in admin["top"]]
+    assert ids == ["yutong", "fangtang", "xiaoman"]
+    assert [r["candidate"]["id"] for r in admin["default_top"]] == \
+        ["xiaoman", "yutong", "suqing"]
 
 
 def test_demand_requirements_come_from_persona_facts():
