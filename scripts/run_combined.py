@@ -299,6 +299,7 @@ def write_transcript(admin: dict, agents: list, workdir: Path) -> dict:
     (workdir / "TRANSCRIPT.md").write_text("\n".join(lines))
     (workdir / "result.json").write_text(
         json.dumps(result, ensure_ascii=False, indent=2))
+    render_dialogue(admin, snaps, workdir)
     return result
 
 
@@ -356,6 +357,92 @@ def main():
             for a in agents:
                 a.stop()
 
+
+
+
+# ---------------------------------------------------------------- dialogue
+
+FIELD_LABELS = {"same_city": "同城", "non_smoker": "不抽烟",
+                "kids_open": "对要孩子持开放态度"}
+
+
+def render_dialogue(admin: dict, snaps: dict, workdir: Path) -> None:
+    """Render the negotiation as a chat-style dialogue (DIALOGUE.md)."""
+    user = admin["user"]
+    reqs = demand_requirements(user)
+    req_text = "、".join(FIELD_LABELS.get(r["field"], r["field"]) for r in reqs)
+    out = [f"# 对话视图：{user['name']}的 Agent × 候选人的 Agent", "",
+           "> 自动模式下，标注为「本人」的发言由驱动按画像代答；"
+           "现场 TUI 模式下为真人输入。其余皆为 Agent 间真实消息事件。", ""]
+    followup_shown = False
+    for i, row in enumerate(admin["top"], 1):
+        c = row["candidate"]
+        peer_id = f"agent-{i + 1}"
+        sess = next((s for s in snaps["agent-1"]["sessions"]
+                     if s["peer_id"] == peer_id), {})
+        art = sess.get("artifact") or {}
+        agreed = (art.get("terms") or {}).get("provider_facts") or {}
+        mine = [e for e in snaps["agent-1"]["events"]
+                if e.get("peer_id") == peer_id]
+        theirs = [e for e in snaps[peer_id]["events"]
+                  if e.get("peer_id") == "agent-1"]
+        out.append(f"## 与{c['name']}的 Agent（契合分 {row['score']:.3f}）")
+        out.append("")
+        seen = set()
+        merged = [(e, "req") for e in mine] + [(e, "prov") for e in theirs]
+        merged.sort(key=lambda t: t[0].get("timestamp", ""))
+        for e, side in merged:
+            t = e.get("type")
+            key = (t, side, e.get("summary"))
+            if key in seen and t not in ("APPROVAL",):
+                continue
+            seen.add(key)
+            if t == "REQUEST_SENT" and side == "req":
+                out.append(f"**{user['name']}的 Agent**：你好，我替{user['name']}"
+                           f"寻找约会对象。硬条件是：{req_text}。先核对一下？")
+            elif t == "FILTER_RESULT" and side == "prov":
+                status = (e.get("payload") or {}).get("status")
+                if status == "PASS":
+                    checks = "、".join(
+                        f"{FIELD_LABELS.get(k, k)} ✓" for k in agreed
+                        if k != "kids_open") or "硬条件"
+                    out.append(f"**{c['name']}的 Agent**：收到，我在本地核对了"
+                               f"——{checks}，都符合。")
+                elif status == "UNKNOWN":
+                    out.append(f"**{c['name']}的 Agent**：硬条件都对上了，"
+                               f"但有一项我这里没有记录，我去问一下本人。")
+            elif t == "POLICY_DECISION" and side == "req" \
+                    and "是否要求" in (e.get("summary") or ""):
+                if not followup_shown:
+                    out.append(f"**系统** → {user['name']}："
+                               f"{e.get('summary')}（这是你画像里没定的偏好）")
+                    out.append(f"**{user['name']}**：是，要求对方不排斥。")
+                    followup_shown = True
+                else:
+                    out.append("**系统**：（同一条补问已同步到这条会话）")
+            elif t == "QUESTION" and side == "prov":
+                out.append(f"**{c['name']}的 Agent** → {c['name']}："
+                           f"对方想确认——你对要孩子持开放态度吗？")
+            elif t == "ANSWER" and side == "prov":
+                val = agreed.get("kids_open")
+                out.append(f"**{c['name']}**："
+                           f"{'是的，我持开放态度。' if val else '这个我比较确定不要。'}")
+            elif t == "PROPOSAL" and side == "req":
+                out.append(f"**{user['name']}的 Agent**：条件全部对齐，"
+                           f"我正式发出一份「见面提案」。")
+            elif t == "PENDING_APPROVAL" and side == "req":
+                out.append("（提案已送达双方，等待两位本人确认…）")
+            elif t == "APPROVAL" and side == "req" \
+                    and "Owner approved" in (e.get("summary") or ""):
+                out.append(f"**{user['name']}**：提案我看了，批准 ✅")
+            elif t == "APPROVAL" and side == "prov" \
+                    and "Owner approved" in (e.get("summary") or ""):
+                out.append(f"**{c['name']}**：我也批准 ✅")
+            elif t == "CONNECTED" and side == "req":
+                out.append(f"🎉 **见面提案达成**——双方 Agent 核对一致、"
+                           f"双方本人均已批准，接下来由真人自行联系。")
+        out.append("")
+    (workdir / "DIALOGUE.md").write_text("\n".join(out))
 
 if __name__ == "__main__":
     main()
