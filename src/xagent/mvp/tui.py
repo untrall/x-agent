@@ -18,6 +18,8 @@ class AgentApp(App):
     BINDINGS = [Binding("ctrl+n", "new_request", "发起需求", priority=True),
                 Binding("ctrl+p", "commands", "命令", priority=True),
                 Binding("ctrl+d", "toggle_debug", "详情", priority=True),
+                Binding("ctrl+up", "chat_target(-1)", "上一位候选", priority=True),
+                Binding("ctrl+down", "chat_target(1)", "下一位候选", priority=True),
                 ("escape", "close_composer", "返回交流")]
 
     CSS = """
@@ -43,6 +45,9 @@ class AgentApp(App):
     #owner-input { height: 3; }
     #owner-actions { height: 3; }
     #owner-actions Button { min-width: 14; width: auto; margin-right: 1; }
+    #choice-bar { height: 3; }
+    #chat-label { width: auto; padding: 1 1 0 0; }
+    #chat-target { width: 1fr; margin: 0; }
     """
 
     def __init__(self, runtime: Any):
@@ -54,6 +59,8 @@ class AgentApp(App):
         self._question_options: list[tuple[str, str]] = []
         self._draft_active = False
         self._draft_question_id: str | None = None
+        self._chat_target: str | None = None  # session_id picked in the choice dropdown
+        self._chat_options: list[tuple[str, str]] = []
         self._composer: str | None = None
         self._busy = False
         self._loop_key = None
@@ -82,10 +89,14 @@ class AgentApp(App):
         with Vertical(id="owner-panel"):
             yield Static("", id="loop-title", markup=False)
             yield Select([], prompt="选择待答问题", id="question-select")
+            with Horizontal(id="choice-bar"):
+                yield Static("正在和：", id="chat-label", markup=False)
+                yield Select([], prompt="选择聊天对象", id="chat-target")
             yield Static("", id="question-detail", markup=False)
             yield Static("", id="loop-error", markup=False)
             yield Input(placeholder="输入你的回答，Enter 交还 Agent", id="owner-input")
             with Horizontal(id="owner-actions"):
+                yield Button("选定", id="choose-button", variant="success")
                 yield Button("批准方案", id="approve-button", variant="success")
                 yield Button("拒绝方案", id="reject-button", variant="error")
                 yield Button("返回交流", id="close-composer")
@@ -164,7 +175,9 @@ class AgentApp(App):
             question_select.value = question_options[0][1]
         actionable = [s for s in sessions if s.get('state') == 'PENDING_APPROVAL' and agent.get('agent_id') not in s.get('approvals', [])]
         results = [s for s in sessions if s.get('artifact')]
-        self.query_one('#selectors').display = bool((self._debug and sessions) or len(actionable) > 1 or len(results) > 1)
+        # The choice panel names candidates itself; the dropdown would only eat rows.
+        choosing = bool(self._choice_sessions() or self._awaiting_session())
+        self.query_one('#selectors').display = bool((self._debug and sessions) or (len(actionable) > 1 and not choosing) or len(results) > 1)
         self._render_details()
 
         log = self.query_one("#events", RichLog)
@@ -174,6 +187,75 @@ class AgentApp(App):
                 continue
             log.write(self._conversation_line(event))
             self._last_event_seq = seq
+
+    def _awaiting_session(self) -> dict | None:
+        """The requester pair I chose, still waiting for the other owner."""
+        own_id = (self._snapshot.get('agent') or {}).get('agent_id')
+        return next((s for s in self._snapshot.get('sessions') or []
+                     if s.get('role') == 'requester' and s.get('state') == 'PENDING_APPROVAL'
+                     and own_id in s.get('approvals', [])), None)
+
+    def _choice_sessions(self) -> list[dict]:
+        """Requester sessions whose proposals wait on my choice (none while one awaits)."""
+        if self._awaiting_session():
+            return []
+        own_id = (self._snapshot.get('agent') or {}).get('agent_id')
+        return [s for s in self._snapshot.get('sessions') or []
+                if s.get('role') == 'requester' and s.get('state') == 'PENDING_APPROVAL'
+                and s.get('proposal') and own_id not in s.get('approvals', [])]
+
+    def _sync_chat_target(self, choices: list[dict]) -> None:
+        options = [(self._peer_name(s.get('peer_id')), s['session_id']) for s in choices]
+        select = self.query_one('#chat-target', Select)
+        if options != self._chat_options:
+            select.set_options(options)
+            self._chat_options = options
+        ids = [value for _, value in options]
+        if self._chat_target not in ids:
+            self._chat_target = ids[0] if ids else None
+        if self._chat_target and select.value != self._chat_target:
+            select.value = self._chat_target
+
+    def action_chat_target(self, step: int) -> None:
+        ids = [value for _, value in self._chat_options]
+        if not ids:
+            return
+        index = ids.index(self._chat_target) if self._chat_target in ids else 0
+        self._chat_target = ids[(index + step) % len(ids)]
+        self._render_loop_in()
+
+    def _latest_chat(self, session_ids: set) -> str:
+        """Last question and its reply, shown in the choice panel itself so it
+        stays visible even when the conversation log is squeezed."""
+        events = [e for e in self._snapshot.get('events') or []
+                  if e.get('session_id') in session_ids and e.get('type') in {'CHAT_SENT', 'CHAT_REPLY'}]
+        sent = next((e for e in reversed(events) if e['type'] == 'CHAT_SENT'), None)
+        if sent is None:
+            return ''
+        peer = self._peer_name(sent.get('peer_id'))
+        chat_id = (sent.get('payload') or {}).get('chat_id')
+        reply = next((e for e in events if e['type'] == 'CHAT_REPLY'
+                      and (e.get('payload') or {}).get('chat_id') == chat_id), None)
+        answer = reply['summary'] if reply else f'（{peer} 的 Agent 正在回答…）'
+        return f"你 → {peer}：{sent.get('summary')}\n{peer} 的 Agent：{answer}"
+
+    def _choice_by_name(self, name: str) -> dict:
+        """Exact name, list number (1-based), unique prefix, or a unique name
+        off by one character (an IME homophone such as 陈雨桐 for 陈语桐)."""
+        choices = self._choice_sessions()
+        named = [(self._peer_name(s.get('peer_id')), s) for s in choices]
+        tests = (
+            lambda n: n == name,
+            lambda n: name.isdigit() and named[int(name) - 1][0] == n if name.isdigit() and 0 < int(name) <= len(named) else False,
+            lambda n: bool(name) and n.startswith(name),
+            lambda n: len(n) == len(name) and sum(a != b for a, b in zip(n, name)) == 1,
+        )
+        for test in tests:
+            hits = [s for n, s in named if test(n)]
+            if len(hits) == 1:
+                return hits[0]
+        names = '、'.join(n for n, _ in named) or '无'
+        raise ValueError(f'需要补充：没有待确认的候选「{name}」，可选：{names}')
 
     def _peer_name(self, peer_id) -> str:
         peers = (getattr(self.runtime, 'config', {}) or {}).get('peers', [])
@@ -199,21 +281,31 @@ class AgentApp(App):
             'PENDING_APPROVAL': ('我的 Agent → 你', f'已与 {peer} 形成提案，等待你确认'),
             'CONNECTED': (f'我 ↔ {peer}', '双方已批准，结果已生成'),
             'APPROVAL': (f'我 ↔ {peer}', '批准状态更新'),
-            'REJECTED': (f'我 ↔ {peer}', self._rejected_text(peer, summary, payload)),
+            'REJECTED': (f'我 ↔ {peer}', self._rejected_text(peer, summary, payload, self._session_role(event.get('session_id')))),
+            'CHAT_SENT': (f'我 → {peer} 的 Agent', f'问：{summary}'),
+            'CHAT_REPLY': (f'{peer} 的 Agent → 我', f'答：{summary}'),
+            'CHAT_RECEIVED': (f'{peer} → 我的 Agent', f'问：{summary}'),
+            'CHAT_REPLIED': ('我的 Agent 替我回答', f'答：{summary}'),
             'PROCESSING_ERROR': ('我的 Agent · 需要处理', summary),
         }
         heading, text = headings.get(kind, (kind or '进展', summary))
         return f'{heading}\n  {text}' + (f' · {detail}' if detail else '') + '\n'
 
     @staticmethod
-    def _rejected_text(peer: str, summary: str, payload: dict) -> str:
+    def _rejected_text(peer: str, summary: str, payload: dict, role: str | None = None) -> str:
         # Owner declines are recorded distinctly by the runtime; anything
         # else (e.g. the peer agent's own policy) keeps the neutral wording.
         if summary == 'Owner rejected proposal':
             return f'你婉拒了与 {peer} 的提案'
         if payload.get('reason') == 'owner rejected proposal':
+            if role == 'requester':
+                return f'{peer} 婉拒了你的选择，可以在剩下的候选里重新选'
             return f'{peer} 婉拒了提案（对方已选择其他人）'
         return '本轮协商已结束'
+
+    def _session_role(self, session_id) -> str | None:
+        session = next((s for s in self._snapshot.get('sessions') or [] if s.get('session_id') == session_id), None)
+        return (session or {}).get('role')
 
     def _field_label(self, field: str) -> str:
         config = getattr(self.runtime, "config", {}) or {}
@@ -312,12 +404,19 @@ class AgentApp(App):
             self.query_one('#question-select', Select).value = question['question_id']
         own_id = (self._snapshot.get('agent') or {}).get('agent_id')
         sessions = self._snapshot.get('sessions', [])
+        # Requester pairs are decided through the choice panel; a provider is
+        # asked only once the requester has chosen them (two-way consent).
         approvals = [s for s in sessions if s.get('state') == 'PENDING_APPROVAL' and s.get('proposal')
-                     and own_id not in s.get('approvals', [])]
+                     and own_id not in s.get('approvals', []) and s.get('role') != 'requester'
+                     and (s.get('role') != 'provider' or s.get('peer_id') in s.get('approvals', []))]
         selected_session = self.query_one('#session-select', Select).value
         approval = next((s for s in approvals if s.get('session_id') == selected_session), approvals[0] if approvals else None)
+        choices = self._choice_sessions()
+        awaiting = self._awaiting_session()
+        self._sync_chat_target(choices)
+        target = next((s for s in choices if s['session_id'] == self._chat_target), None)
         manual = self._composer is not None
-        self._needs_owner = bool(question or approval or stale_draft) and not manual and not self._busy
+        self._needs_owner = bool(question or approval or choices or stale_draft) and not manual and not self._busy
         self._loop_session_id = None
         self._loop_question_id = question['question_id'] if question and not manual else None
         title, content, key = '', '', None
@@ -344,15 +443,49 @@ class AgentApp(App):
             content = f"{scope}\n{reason}"
             field.placeholder = '用自己的话回答，Enter 提交'
             input_visible = True
+        elif awaiting:
+            peer = self._peer_name(awaiting.get('peer_id'))
+            key = ('awaiting', awaiting['session_id'])
+            title = f'◆ 已选定 {peer} · 等待对方回应'
+            content = (f"{peer} 接受后生成见面提案，其余候选随之婉拒；\n"
+                       f"{peer} 婉拒的话，你可以在剩下的候选里重新选。")
+        elif target:
+            # Proposals wait on me: chat with the picked candidate's agent, then choose.
+            peer = self._peer_name(target.get('peer_id'))
+            key = ('choice', tuple(sorted(s['session_id'] for s in choices)))
+            title = f'◆ 需要你参与 · {len(choices)} 选 1' if len(choices) > 1 else '◆ 需要你参与 · 还剩 1 位候选'
+            content = ("直接打字 → 问对方的 Agent（按对方画像回答）\n"
+                       "Ctrl+↑/↓ 或下拉框切换对象 · 想好了点「选定」，对方本人确认后成局")
+            latest = self._latest_chat({target['session_id']})
+            if latest:
+                content += "\n\n" + latest
+            field.placeholder = f"问 {peer} 的 Agent，例如：周末一般怎么过？"
+            self.query_one('#choose-button', Button).label = f"选定 {peer}"
+            input_visible = True
         elif approval:
             self._loop_session_id = approval['session_id']
             key = ('approval', approval['session_id'])
-            title = '◆ 需要你参与 · 确认方案'
+            peer = self._peer_name(approval.get('peer_id'))
             terms = approval['proposal'].get('terms') or {}
             requirements = '\n'.join(self._format_requirement(r) for r in terms.get('requirements', []))
-            content = f"与 {self._peer_name(approval.get('peer_id'))} 的提案\n{requirements}\n批准后等待双方确认；拒绝则结束本轮。"
+            if approval.get('role') == 'provider':
+                answered = sum(1 for e in self._snapshot.get('events') or []
+                               if e.get('type') == 'CHAT_REPLIED' and e.get('session_id') == approval['session_id'])
+                title = f'◆ {peer} 选择了你 · 是否接受？'
+                content = (f"与 {peer} 的提案\n{requirements}\n"
+                           + (f"你的 Agent 刚才替你回答了 {answered} 个问题，见上方对话区。\n" if answered else '')
+                           + "接受后生成见面提案；婉拒则结束本轮。")
+            else:
+                title = '◆ 需要你参与 · 确认方案'
+                content = f"与 {peer} 的提案\n{requirements}\n批准后等待双方确认；拒绝则结束本轮。"
+            provider = approval.get('role') == 'provider'
+            self.query_one('#approve-button', Button).label = '接受' if provider else '批准方案'
+            self.query_one('#reject-button', Button).label = '婉拒' if provider else '拒绝方案'
         panel.display = key is not None and not self._busy
         field.display = input_visible
+        choosing = bool(key and key[0] == 'choice')
+        self.query_one('#choice-bar').display = choosing
+        self.query_one('#choose-button').display = choosing
         self.query_one('#question-select').display = len(questions) > 1 and not manual
         self.query_one('#loop-title', Static).update(title)
         self.query_one('#question-detail', Static).update(content)
@@ -360,7 +493,7 @@ class AgentApp(App):
             self._loop_error = ''
         self.query_one('#loop-error', Static).update(self._loop_error)
         self.query_one('#loop-error').display = bool(self._loop_error)
-        self.query_one('#owner-actions').display = bool(self._loop_session_id) or manual
+        self.query_one('#owner-actions').display = bool(self._loop_session_id) or manual or choosing
         self.query_one('#close-composer').display = manual
         for button_id in ('approve-button', 'reject-button'):
             self.query_one(f'#{button_id}').display = bool(self._loop_session_id)
@@ -376,6 +509,11 @@ class AgentApp(App):
             phase = '● Agent 正在处理与交流…'
         elif self._needs_owner:
             phase = '◆ 等待你参与'
+        elif awaiting:
+            phase = f"● 等待 {self._peer_name(awaiting.get('peer_id'))} 回应…"
+        elif any(s.get('state') == 'PENDING_APPROVAL' and s.get('role') == 'provider'
+                 and s.get('peer_id') not in s.get('approvals', []) for s in sessions):
+            phase = '● 提案已就绪 · 等待对方选择…'
         elif any(s.get('state') == 'PENDING_APPROVAL' for s in sessions):
             phase = '● 等待对方确认'
         elif any(s.get('state') in {'ACTIVE', 'PROPOSED', 'WAITING_INPUT'} for s in sessions):
@@ -432,8 +570,16 @@ class AgentApp(App):
         elif button_id in {'approve-button', 'reject-button'} and self._loop_session_id and not self._busy:
             command = '/approve' if button_id == 'approve-button' else '/reject'
             self._start_action(f'{command} {self._loop_session_id}', None)
+        elif button_id == 'choose-button' and self._chat_target and not self._busy:
+            self._start_action('/choose', None)
 
     def on_select_changed(self, _event: Select.Changed) -> None:
+        if _event.select.id == 'chat-target':
+            if isinstance(_event.value, str) and _event.value != self._chat_target:
+                self._chat_target = _event.value
+                self._render_loop_in()
+                self.query_one('#owner-input', Input).focus()
+            return
         if (_event.select.id == 'question-select' and self._draft_active and self._draft_question_id
                 and self._draft_question_id in {value for _, value in self._question_options}
                 and _event.value != self._draft_question_id):
@@ -471,6 +617,10 @@ class AgentApp(App):
         draft_question_id = self._draft_question_id
         original_text = line
         field.value = ''
+        # The Changed('') message lands after the next render; without this the
+        # same panel (e.g. the choice panel) reappears believing a draft is
+        # open and never takes the keyboard back.
+        self._draft_active = False
         self._start_action(line, draft_question_id, original_text)
 
     def _start_action(self, line: str, draft_question_id: str | None, original_text: str | None = None) -> None:
@@ -489,7 +639,8 @@ class AgentApp(App):
             restored = original_text if original_text is not None else line
             self._failed_text = restored
             self._error_question_id = self._loop_question_id
-            if draft_question_id or self._composer:
+            # Typed lines (original_text set) always come back for a quick fix.
+            if draft_question_id or self._composer or original_text is not None:
                 self.query_one('#owner-input', Input).value = restored
                 self._draft_question_id = draft_question_id
                 self._draft_active = True
@@ -504,7 +655,26 @@ class AgentApp(App):
         parts = line.split(maxsplit=2)
         command = parts[0].lower() if parts else ""
         if command == "/help":
-            self._set_status("/request TEXT · /answer ID TEXT · /remember ID TEXT · /approve [SESSION_ID] · /reject [SESSION_ID] · /retry MESSAGE_ID · /sessions")
+            self._set_status("/request TEXT · /answer ID TEXT · /remember ID TEXT · /approve [SESSION_ID] · /reject [SESSION_ID] · @名字 问题 · /choose 名字 · /retry MESSAGE_ID · /sessions")
+            return
+        if line.startswith("@"):
+            name, _, text = line[1:].partition(" ")
+            if not text.strip():
+                raise ValueError("需要补充：格式是 @名字 问题，例如 @陈语桐 你周末一般怎么过？")
+            session = self._choice_by_name(name)
+            self._chat_target = session["session_id"]
+            await self.runtime.chat(session["session_id"], text.strip())
+            self._set_status(f"已发给 {self._peer_name(session.get('peer_id'))} 的 Agent")
+            return
+        if command == "/choose":
+            if len(parts) > 2:
+                raise ValueError("需要补充：格式是 /choose 或 /choose 名字")
+            session = self._choice_by_name(parts[1]) if len(parts) == 2 else \
+                next((s for s in self._choice_sessions() if s["session_id"] == self._chat_target), None)
+            if session is None:
+                raise ValueError("需要补充：先在下拉框里选一位候选")
+            await self.runtime.choose(session["session_id"])
+            self._set_status(f"已选定 {self._peer_name(session.get('peer_id'))}，等待对方确认")
             return
         if command == "/sessions":
             sessions = self._snapshot.get("sessions") or []
@@ -540,6 +710,14 @@ class AgentApp(App):
             raise ValueError(f"unknown command: {command}")
         if draft_question_id:
             await self._answer(draft_question_id, line)
+        elif self._choice_sessions() and not self._composer:
+            # At the choice stage plain text goes to the picked candidate,
+            # never into a brand-new broadcast.
+            session = next((s for s in self._choice_sessions() if s["session_id"] == self._chat_target), None)
+            if session is None:
+                raise ValueError("需要补充：先在下拉框里选一位候选")
+            await self.runtime.chat(session["session_id"], line)
+            self._set_status(f"已发给 {self._peer_name(session.get('peer_id'))} 的 Agent")
         else:
             await self.runtime.broadcast(line)
             self._set_status("Request submitted")

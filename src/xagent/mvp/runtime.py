@@ -9,7 +9,8 @@ from datetime import datetime, timezone
 
 import httpx
 
-from .models import TERMINAL_STATES, new_id, proposal_digest, validate_envelope
+from .chat import REPLY_MAX_CHARS, ChatError
+from .models import CHAT_MAX_CHARS, TERMINAL_STATES, new_id, proposal_digest, validate_envelope
 from .scenario import coerce_fact, evaluate_requirements, validate_requirement, validate_scenario
 from .storage import Storage
 from .profile import profile_view
@@ -21,7 +22,7 @@ def _now() -> str:
 
 
 class AgentRuntime:
-    def __init__(self, config: dict, policy=None):
+    def __init__(self, config: dict, policy=None, chat_model=None):
         self.config = dict(config)
         self.config["scenario"] = validate_scenario(self.config["scenario"])
         if not self.config.get("owner_token") or self.config["owner_token"] == self.config.get("token"):
@@ -37,6 +38,8 @@ class AgentRuntime:
             policy = DeterministicPolicy()
         self.policy = policy
         self.mode = policy.mode
+        # Separate from the decision policy: only answers chat at the choice stage.
+        self.chat_model = chat_model
         self._tasks: list[asyncio.Task] = []
         self._processing_tasks: set[asyncio.Task] = set()
         self._inflight_sessions: set[str] = set()
@@ -48,7 +51,8 @@ class AgentRuntime:
             "agent": {"agent_id": self.agent_id, "name": self.config["name"], "port": self.config["port"], "profile": self.profile},
             "mode": self.mode,
             "brain": {"model": getattr(self.policy, "model", None),
-                      "reasoning": getattr(self.policy, "reasoning", None)},
+                      "reasoning": getattr(self.policy, "reasoning", None),
+                      "chat_model": getattr(self.chat_model, "model", None)},
             "requests": self.storage.all("request"),
             "sessions": self.storage.all("session"),
             "questions": self.storage.all("question"),
@@ -153,6 +157,14 @@ class AgentRuntime:
         elif kind == "REJECT":
             if not isinstance(payload.get("reason"), str):
                 raise ValueError("invalid rejection payload")
+        elif kind == "CHAT":
+            text = payload.get("text")
+            if not isinstance(payload.get("chat_id"), str) or not isinstance(text, str) or not text.strip() or len(text) > CHAT_MAX_CHARS:
+                raise ValueError("invalid chat payload")
+        elif kind == "CHAT_REPLY":
+            text = payload.get("text")
+            if not isinstance(payload.get("chat_id"), str) or not isinstance(text, str) or not text.strip() or len(text) > REPLY_MAX_CHARS or type(payload.get("ok")) is not bool:
+                raise ValueError("invalid chat reply payload")
 
     async def _inbox_loop(self):
         while self._running:
@@ -231,6 +243,10 @@ class AgentRuntime:
             self._handle_accept(envelope, session)
         elif kind == "APPROVAL":
             self._handle_approval(envelope, session)
+        elif kind == "CHAT":
+            await self._handle_chat(envelope, session)
+        elif kind == "CHAT_REPLY":
+            self._handle_chat_reply(envelope, session)
         elif kind == "REJECT":
             session["state"] = "NO_MATCH"
             session["revision"] += 1
@@ -554,7 +570,107 @@ class AgentRuntime:
         with self.storage.transaction() as db:
             self.storage.put("session", session["session_id"], session, db)
             self.storage.event(_now(), "CONNECTED" if session["artifact"] else "APPROVAL", session["session_id"], session["peer_id"], "Both owners approved" if session["artifact"] else "Peer approved", {"digest": proposal["digest"]}, db)
+            if session["artifact"]:
+                self._decline_rivals(session, db)
             self.storage.mark_processed(envelope["message_id"], db)
+
+    # ------------------------------------------------------------ choice-stage chat
+
+    def _chat_history(self, session_id: str) -> list[dict]:
+        events = [e for e in self.storage.events() if e.get("session_id") == session_id]
+        asked = {e["payload"].get("chat_id"): e["payload"].get("text") for e in events if e["type"] == "CHAT_RECEIVED"}
+        return [{"question": asked[e["payload"]["chat_id"]], "reply": e["payload"]["text"]}
+                for e in events if e["type"] == "CHAT_REPLIED" and e["payload"].get("ok") and e["payload"].get("chat_id") in asked]
+
+    async def chat(self, session_id: str, text: str) -> dict:
+        """Owner (requester) asks a candidate's agent a free-form question."""
+        if not isinstance(text, str) or not text.strip():
+            raise ValueError("聊天内容不能为空")
+        text = text.strip()
+        if len(text) > CHAT_MAX_CHARS:
+            raise ValueError(f"聊天内容不能超过 {CHAT_MAX_CHARS} 字")
+        async with self._session_locks.setdefault(session_id, asyncio.Lock()):
+            session = self.storage.get("session", session_id)
+            if session is None or session["role"] != "requester":
+                raise ValueError("只能和自己发起需求的候选聊天")
+            if session["state"] != "PENDING_APPROVAL" or self.agent_id in session["approvals"]:
+                raise ValueError("只有在提案待你确认时才能聊天")
+            chat_id = new_id()
+            with self.storage.transaction() as db:
+                self.storage.enqueue(self._envelope(session, "CHAT", {"chat_id": chat_id, "text": text}), db)
+                self.storage.event(_now(), "CHAT_SENT", session_id, session["peer_id"], text, {"chat_id": chat_id, "text": text}, db)
+        return self.snapshot()
+
+    async def _handle_chat(self, envelope: dict, session: dict):
+        if session["role"] != "provider":
+            raise PermissionError("only the requester may start a chat")
+        chat_id = envelope["payload"]["chat_id"]
+        question = envelope["payload"]["text"].strip()
+        name, peer = self.config["name"], self.peers[session["peer_id"]]["name"]
+        history = self._chat_history(session["session_id"])
+        # Record the question first so the owner window shows it while the model thinks.
+        if not any(e["type"] == "CHAT_RECEIVED" and e["payload"].get("chat_id") == chat_id for e in self.storage.events()):
+            self.storage.event(_now(), "CHAT_RECEIVED", session["session_id"], session["peer_id"], question, {"chat_id": chat_id, "text": question})
+        persona = self.profile.get("persona") or {"description": self.profile.get("description", ""), "tags": self.profile.get("tags", [])}
+        if self.chat_model is None:
+            ok, reply = False, f"{name}的 Agent 没有连接聊天模型，暂时没法回答。"
+        else:
+            try:
+                ok, reply = True, await self.chat_model.reply(name=name, peer=peer, persona=persona, history=history, question=question)
+            except ChatError as exc:
+                ok, reply = False, f"{name}的 Agent 暂时没法回答（{exc}），可以稍后再问一次。"
+        payload = {"chat_id": chat_id, "text": reply, "ok": ok}
+        with self.storage.transaction() as db:
+            self.storage.enqueue(self._envelope(session, "CHAT_REPLY", payload, envelope["message_id"]), db)
+            self.storage.event(_now(), "CHAT_REPLIED", session["session_id"], session["peer_id"], reply, payload, db)
+            self.storage.mark_processed(envelope["message_id"], db)
+
+    def _handle_chat_reply(self, envelope: dict, session: dict):
+        if session["role"] != "requester":
+            raise PermissionError("chat replies only go to the requester")
+        payload = envelope["payload"]
+        with self.storage.transaction() as db:
+            self.storage.event(_now(), "CHAT_REPLY", session["session_id"], session["peer_id"], payload["text"], payload, db)
+            self.storage.mark_processed(envelope["message_id"], db)
+
+    async def choose(self, session_id: str) -> dict:
+        """Owner picks one pending proposal and asks that candidate to accept.
+
+        Two-way consent: the others stay pending until the chosen candidate
+        accepts (then _decline_rivals declines them) or declines (then the
+        owner may choose again among the rest).
+        """
+        chosen = self.storage.get("session", session_id)
+        if chosen is None or chosen["role"] != "requester":
+            raise ValueError("只能选择自己发起需求的候选")
+        ids = sorted(s["session_id"] for s in self.storage.all("session")
+                     if s["role"] == "requester" and s["request_id"] == chosen["request_id"])
+        async with AsyncExitStack() as stack:
+            for sid in ids:
+                await stack.enter_async_context(self._session_locks.setdefault(sid, asyncio.Lock()))
+            sessions = [self.storage.get("session", sid) for sid in ids]
+            waiting = next((s for s in sessions if s["state"] == "PENDING_APPROVAL" and self.agent_id in s["approvals"]), None)
+            if waiting is not None:
+                raise ValueError(f"正在等待 {self.peers[waiting['peer_id']]['name']} 回应，暂时不能改选")
+            current = next(s for s in sessions if s["session_id"] == session_id)
+            if current["state"] != "PENDING_APPROVAL" or self.agent_id in current["approvals"]:
+                raise ValueError("这位候选的提案不在待确认状态")
+            return self._approve_unlocked(session_id, True, current["proposal"]["digest"])
+
+    def _decline_rivals(self, connected: dict, db) -> None:
+        """Once a requester pair connects, decline the other still-pending pairs."""
+        if connected["role"] != "requester":
+            return
+        for session in self.storage.all("session"):
+            if (session["role"] != "requester" or session["request_id"] != connected["request_id"]
+                    or session["session_id"] == connected["session_id"] or session["state"] != "PENDING_APPROVAL"):
+                continue
+            digest = (session.get("proposal") or {}).get("digest")
+            session["state"] = "REJECTED"
+            session["revision"] += 1
+            self.storage.put("session", session["session_id"], session, db)
+            self.storage.enqueue(self._envelope(session, "REJECT", {"reason": "owner rejected proposal", "digest": digest}), db)
+            self.storage.event(_now(), "REJECTED", session["session_id"], session["peer_id"], "Owner rejected proposal", {"digest": digest}, db)
 
     async def answer(self, question_id: str, text: str, remember: bool = False, expected_revision: int | None = None) -> dict:
         question = self.storage.get("question", question_id)
@@ -668,4 +784,6 @@ class AgentRuntime:
             session["revision"] += 1
             self.storage.put("session", session_id, session, db)
             self.storage.event(_now(), event_type, session_id, session["peer_id"], summary, {"digest": digest}, db)
+            if session["artifact"]:
+                self._decline_rivals(session, db)
         return self.snapshot()

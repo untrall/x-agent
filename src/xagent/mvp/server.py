@@ -60,6 +60,22 @@ def create_peer_app(runtime: AgentRuntime) -> FastAPI:
         except (PermissionError, ValueError) as exc:
             fail(exc)
 
+    @app.post("/owner/chat")
+    async def chat(request: Request, body: dict):
+        owner(request)
+        try:
+            return await runtime.chat(body.get("session_id", ""), body.get("text", ""))
+        except (PermissionError, ValueError) as exc:
+            fail(exc)
+
+    @app.post("/owner/choose")
+    async def choose(request: Request, body: dict):
+        owner(request)
+        try:
+            return await runtime.choose(body.get("session_id", ""))
+        except (PermissionError, ValueError) as exc:
+            fail(exc)
+
     @app.post("/owner/retry")
     async def retry(request: Request, body: dict):
         owner(request)

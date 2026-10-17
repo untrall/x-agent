@@ -24,7 +24,14 @@ Phase C (user view): start N+1 headless agent processes, broadcast
 the demand, drive questions/approvals to completion, and write a
 combined transcript (TRANSCRIPT.md + result.json) into the run dir.
 
+At the choice stage the protagonist may chat with each candidate's
+agent, which answers from its own owner's persona via a real model
+(--chat, LLM_* env). --auto-chat asks preset questions before picking
+the #1 candidate; --owner-choice leaves chat and /choose to the human
+in the protagonist's TUI window.
+
     .venv/bin/python scripts/run_combined.py
+    .venv/bin/python scripts/run_combined.py --chat --auto-chat
     .venv/bin/python scripts/run_combined.py --configs-only
     .venv/bin/python scripts/run_combined.py --user azhe --top 3 --keep
 """
@@ -107,6 +114,24 @@ def kids_open(persona: dict) -> bool:
     return persona.get("facts", {}).get("wants_kids") != "no"
 
 
+def persona_brief(person: dict) -> dict:
+    """What a candidate's own agent may draw on when chatting.
+
+    Hard facts (facts.*) stay out: they go through the negotiation
+    protocol and owner confirmation, never through free chat.
+    """
+    axes = json.loads((ROOT / "scenarios" / "dating.json").read_text())["trait_axes"]
+    labels = {a["key"]: a["label"] for a in axes}
+    # Ranking rows carry a trimmed candidate; read the full persona by id.
+    full = {p["id"]: p for p in json.loads((ROOT / "data" / "personas.json").read_text())}
+    person = full.get(person.get("id"), person)
+    brief = {k: person[k] for k in ("name", "age", "city", "job", "essence",
+                                   "values", "interests", "needs", "offers")
+             if k in person}
+    brief["traits"] = {labels.get(k, k): v for k, v in person.get("traits", {}).items()}
+    return brief
+
+
 def build_configs(admin: dict, workdir: Path) -> list:
     scenario = json.loads(SCENARIO_PATH.read_text())
     user = admin["user"]
@@ -135,6 +160,7 @@ def build_configs(admin: dict, workdir: Path) -> list:
                 "public_fields": ["same_city", "non_smoker", "kids_open"],
                 "tags": person.get("interests", [])[:3],
                 "description": person.get("essence", ""),
+                "persona": persona_brief(person),
             },
             "peers": [
                 {
@@ -156,19 +182,22 @@ def build_configs(admin: dict, workdir: Path) -> list:
 # ---------------------------------------------------------------- phase C
 
 class AgentProc:
-    def __init__(self, cfg: dict, workdir: Path):
+    def __init__(self, cfg: dict, workdir: Path, chat: bool = False):
         self.cfg = cfg
         self.workdir = workdir
         self.n = int(cfg["agent_id"].split("-")[-1])
         self.url = f"http://127.0.0.1:{cfg['port']}"
         self.log = (workdir / f"process-{self.n}.log").open("a")
         self.proc = None
+        # Only candidates answer chat; the protagonist only asks.
+        self.chat = chat and self.n > 1
 
     def start(self):
         self.proc = subprocess.Popen(
             [sys.executable, str(LAUNCHER), "--config",
              str(self.workdir / f"agent-{self.n}.json"),
-             "--headless", "--mode", "deterministic"],
+             "--headless", "--mode", "deterministic"]
+            + (["--chat-model"] if self.chat else []),
             cwd=ROOT, stdout=self.log, stderr=subprocess.STDOUT,
         )
 
@@ -213,13 +242,43 @@ def wait_for(predicate, label: str, timeout: float = 30):
     raise TimeoutError(f"timed out: {label}")
 
 
+AUTO_CHAT = ["{name}周末一般喜欢怎么过？",
+             "{name}觉得两个人在一起，最重要的是什么？"]
+
+
+def wait_chat_replies(requester, expected: int, timeout: float = 90) -> None:
+    def done():
+        events = requester.state()["events"]
+        return sum(e["type"] == "CHAT_REPLY" for e in events) >= expected
+    wait_for(done, "chat replies", timeout=timeout)
+
+
+_focused = {"pane": None}
+
+
+def focus_chooser(target: str, req_sessions: list) -> None:
+    """Give the keyboard to whoever must decide next: the chosen candidate
+    while they consider 阿哲's choice, otherwise 阿哲 (pane 0). Pane n-1
+    shows agent-n (see scripts/demo_tui.sh)."""
+    awaiting = next((s for s in req_sessions if s["state"] == "PENDING_APPROVAL"
+                     and "agent-1" in s.get("approvals", [])), None)
+    pane = int(awaiting["peer_id"].split("-")[-1]) - 1 if awaiting else 0
+    if pane != _focused["pane"]:
+        subprocess.run(["tmux", "select-pane", "-t", f"{target}.{pane}"], check=False)
+        _focused["pane"] = pane
+
+
 def drive(agents: list, admin: dict, followup_answer: str,
-          delay: float = 0.0) -> dict:
+          delay: float = 0.0, auto_chat: bool = False,
+          owner_choice: bool = False, tmux_target: str | None = None) -> dict:
     """Auto-owner: answer questions from persona truth, then pick one.
 
-    The protagonist waits until every candidate has reached a proposal,
-    approves only the #1 ranked candidate (agent-2) and rejects the rest;
-    only the chosen candidate's owner approves. Result: one meeting.
+    Once every candidate has reached a proposal, the protagonist chooses
+    exactly one. owner_choice leaves that to the human (chat with @名字,
+    then /choose in the TUI); otherwise this driver optionally asks the
+    AUTO_CHAT questions (auto_chat) and chooses the #1 ranked candidate.
+    A candidate's owner approves only after the protagonist has approved
+    their pair, so declined candidates never approve. Result: one meeting.
 
     delay pauses after each owner action so a watching audience (attached
     TUI windows) can follow every step.
@@ -236,9 +295,9 @@ def drive(agents: list, admin: dict, followup_answer: str,
                     "requirements": demand_requirements(user)})
     time.sleep(delay)
 
-    chosen = "agent-2"
-    answered, decided = set(), set()
-    deadline = time.monotonic() + 120
+    answered, decided, chose = set(), set(), False
+    # A human deciding in the TUI may take as long as the pitch needs.
+    deadline = time.monotonic() + (3600 if owner_choice else 300)
     while time.monotonic() < deadline:
         for agent in agents:
             for q in agent.state()["questions"]:
@@ -259,19 +318,41 @@ def drive(agents: list, admin: dict, followup_answer: str,
         all_proposed = len(req_sessions) == len(agents) - 1 and all(
             s["state"] == "PENDING_APPROVAL" or s["state"] in TERMINAL
             for s in req_sessions)
-        for agent in agents:
+        if all_proposed and not chose and not owner_choice:
+            pending = {s["peer_id"]: s for s in req_sessions
+                       if s["state"] == "PENDING_APPROVAL"}
+            if auto_chat:
+                sent = 0
+                for template in AUTO_CHAT:
+                    for peer_id, s in pending.items():
+                        name = people[peer_id]["name"]
+                        requester.call("POST", "/owner/chat",
+                                       {"session_id": s["session_id"],
+                                        "text": template.format(name=name)})
+                        sent += 1
+                        time.sleep(delay)
+                    wait_chat_replies(requester, sent)
+                    time.sleep(delay)
+            top = next(f"agent-{i + 2}" for i in range(len(admin["top"]))
+                       if f"agent-{i + 2}" in pending)
+            requester.call("POST", "/owner/choose",
+                           {"session_id": pending[top]["session_id"]})
+            chose = True
+            time.sleep(delay)
+        if tmux_target:
+            focus_chooser(tmux_target, req_sessions)
+        for agent in agents[1:]:
+            if owner_choice:
+                break  # two-way consent: the chosen candidate decides in their own window
             me = agent.cfg["agent_id"]
-            if me == "agent-1" and not all_proposed:
-                continue  # protagonist compares all proposals first
-            if me not in ("agent-1", chosen):
-                continue  # not chosen: wait for the protagonist's decline
             for s in agent.state()["sessions"]:
                 key = (me, s["session_id"])
+                # Approve only once the protagonist has approved this pair.
                 if s["state"] == "PENDING_APPROVAL" and s.get("proposal") \
+                        and "agent-1" in s.get("approvals", []) \
                         and key not in decided:
                     agent.call("POST", "/owner/approvals",
-                               {"session_id": s["session_id"],
-                                "approve": me == chosen or s["peer_id"] == chosen,
+                               {"session_id": s["session_id"], "approve": True,
                                 "proposal_digest": s["proposal"]["digest"],
                                 "expected_revision": s["revision"]})
                     decided.add(key)
@@ -285,10 +366,27 @@ def drive(agents: list, admin: dict, followup_answer: str,
 
 # ---------------------------------------------------------------- output
 
+def chosen_name(admin: dict, snaps: dict) -> str:
+    """The candidate the protagonist ended up meeting (not necessarily #1);
+    with two-way consent an earlier choice may have declined."""
+    rows = [(row["candidate"]["name"],
+             next((s for s in snaps["agent-1"]["sessions"]
+                   if s["peer_id"] == f"agent-{i + 2}"), {}))
+            for i, row in enumerate(admin["top"])]
+    for name, sess in rows:
+        if sess.get("state") == "CONNECTED":
+            return name
+    for name, sess in rows:
+        if "agent-1" in sess.get("approvals", []):
+            return name
+    return "另一位"
+
+
 def write_transcript(admin: dict, agents: list, workdir: Path) -> dict:
     user = admin["user"]
     snaps = {a.cfg["agent_id"]: a.state() for a in agents}
     req_sessions = {s["peer_id"]: s for s in snaps["agent-1"]["sessions"]}
+    chosen = chosen_name(admin, snaps)
     result = {"user": user["name"], "ranking": [], "sessions": {},
               "artifacts": {}}
     lines = [f"# 结合演示：{user['name']}的匹配 → 协商全记录", "",
@@ -315,7 +413,8 @@ def write_transcript(admin: dict, agents: list, workdir: Path) -> dict:
     lines += ["", "## 第二幕 · 用户视角（去中心化协商 src/xagent/mvp）", "",
               "上榜的候选各自由自己的 Agent 出面，与主角的 Agent 逐一核对"
               "硬条件、补问画像未定的偏好、互发提案。所有提案到齐后，"
-              f"{user['name']}只批准排名第一的一位，其余婉拒——最终只见一个人。",
+              f"{user['name']}可以先和各位候选的 Agent 聊聊（对方 Agent 按"
+              f"本人画像用真模型回答），再选定一位、其余婉拒——最终只见一个人。",
               ""]
     for i, row in enumerate(admin["top"], 1):
         c = row["candidate"]
@@ -337,8 +436,8 @@ def write_transcript(admin: dict, agents: list, workdir: Path) -> dict:
             lines.append(f"- 🎉 **{art['title']}**已生成（digest "
                          f"{art['proposal_digest'][:12]}…）：{art['next_step']}")
         elif sess.get("state") == "REJECTED":
-            lines.append(f"- 条件都对上了，但{user['name']}只确认排名第一的"
-                         f"{admin['top'][0]['candidate']['name']}，婉拒了这份提案。")
+            lines.append(f"- 条件都对上了，但{user['name']}选定了{chosen}，"
+                         "婉拒了这份提案。")
         lines.append("")
     (workdir / "TRANSCRIPT.md").write_text("\n".join(lines))
     (workdir / "result.json").write_text(
@@ -367,7 +466,17 @@ def main():
                         help="不应用网页里的「太安静了」反馈，用默认排名")
     parser.add_argument("--wait-enter", action="store_true",
                         help="开始协商前等待按 Enter（先讲完网页第一幕）")
+    parser.add_argument("--chat", action="store_true",
+                        help="候选 Agent 用真模型按画像回答聊天（读 LLM_* 环境变量；--attach 时由窗口进程决定）")
+    parser.add_argument("--auto-chat", action="store_true",
+                        help="三选一前自动问每位候选两个预设问题（隐含 --chat）")
+    parser.add_argument("--owner-choice", action="store_true",
+                        help="三选一交给真人：主角窗口里选人聊天、选定，被选中的候选在自己窗口里接受或婉拒")
+    parser.add_argument("--tmux-target", metavar="SESSION:WINDOW",
+                        help="键盘跟着决策走：切到被选中候选的窗格，婉拒后切回主角（窗格 n-1 是 agent-n）")
     args = parser.parse_args()
+    if args.auto_chat and args.owner_choice:
+        parser.error("--auto-chat 和 --owner-choice 只能二选一")
     delay = args.delay if args.delay is not None else (1.5 if args.attach else 0.0)
 
     admin = admin_ranking(args.user, args.top, feedback=not args.no_feedback)
@@ -406,7 +515,8 @@ def main():
               f"{' --no-feedback' if args.no_feedback else ''}")
         return
 
-    agents = [AgentProc(cfg, workdir) for cfg in configs]
+    agents = [AgentProc(cfg, workdir, chat=args.chat or args.auto_chat)
+              for cfg in configs]
     try:
         if not args.attach:
             for a in agents:
@@ -417,7 +527,12 @@ def main():
             input(f"{len(agents)} 个 Agent 已上线。讲完网页第一幕后，"
                   "按 Enter 开始第二幕…")
         print(f"【用户视角】{len(agents)} 个 Agent 已上线，开始协商…")
-        drive(agents, admin, args.followup_answer, delay)
+        if args.owner_choice:
+            print(f"提案到齐后，在{admin['user']['name']}的窗口里选人聊天、点「选定」；"
+                  "被选中的候选在自己窗口里接受或婉拒。")
+        drive(agents, admin, args.followup_answer, delay,
+              auto_chat=args.auto_chat, owner_choice=args.owner_choice,
+              tmux_target=args.tmux_target)
         result = write_transcript(admin, agents, workdir)
         print("协商结果：")
         for name, state in result["sessions"].items():
@@ -448,6 +563,7 @@ def render_dialogue(admin: dict, snaps: dict, workdir: Path) -> None:
            "> 自动模式下，标注为「本人」的发言由驱动按画像代答；"
            "现场 TUI 模式下为真人输入。其余皆为 Agent 间真实消息事件。", ""]
     followup_shown = False
+    chosen = chosen_name(admin, snaps)
     for i, row in enumerate(admin["top"], 1):
         c = row["candidate"]
         peer_id = f"agent-{i + 1}"
@@ -464,7 +580,7 @@ def render_dialogue(admin: dict, snaps: dict, workdir: Path) -> None:
         seen, approvals_shown = set(), set()
         approval_line = {"req": f"**{user['name']}**：提案我看了，批准 ✅",
                          "prov": f"**{c['name']}**：我也批准 ✅"}
-        merged =[(e, "req") for e in mine] + [(e, "prov") for e in theirs]
+        merged = [(e, "req") for e in mine] + [(e, "prov") for e in theirs]
         merged.sort(key=lambda t: t[0].get("timestamp", ""))
         for e, side in merged:
             t = e.get("type")
@@ -518,10 +634,19 @@ def render_dialogue(admin: dict, snaps: dict, workdir: Path) -> None:
                         out.append(approval_line[s])
                 out.append(f"🎉 **见面提案达成**——双方 Agent 核对一致、"
                            f"双方本人均已批准，接下来由真人自行联系。")
-            elif t == "REJECTED" and side == "req":
-                top1 = admin["top"][0]["candidate"]["name"]
-                out.append(f"**{user['name']}**：条件都对上了，谢谢。不过这次我"
-                           f"只想认真认识一位——我选了{top1}，这份提案就婉拒了。")
+            elif t == "CHAT_SENT" and side == "req":
+                out.append(f"**{user['name']}** → {c['name']}的 Agent："
+                           f"{e.get('summary')}")
+            elif t == "CHAT_REPLY" and side == "req":
+                note = "" if (e.get("payload") or {}).get("ok") else "（未能回答）"
+                out.append(f"**{c['name']}的 Agent**{note}：{e.get('summary')}")
+            elif t == "REJECTED" and e.get("summary") == "Owner rejected proposal":
+                # Whoever's own log says "Owner rejected" is the one who declined.
+                if side == "req":
+                    out.append(f"**{user['name']}**：条件都对上了，谢谢。不过这次我"
+                               f"只想认真认识一位——我选了{chosen}，这份提案就婉拒了。")
+                else:
+                    out.append(f"**{c['name']}**：谢谢你选我，不过这次我先不接受。")
         out.append("")
     (workdir / "DIALOGUE.md").write_text("\n".join(out))
 

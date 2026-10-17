@@ -26,8 +26,17 @@ X-Agent 的完整故事是两幕，分别由仓库的两套代码承载，现在
    由系统**当场补问主角本人**，新条件实时同步给所有进行中的会话；
 4. 候选人被问到未公开的事实时，由其 Agent 询问本人确认；
 5. 条件全过 → 主角 Agent 发提案 → 双方 Agent 核对；
-6. 所有提案到齐后，主角**只批准排名第一的一位**，其余婉拒 →
-   双方本人批准 → 生成唯一一份「见面提案」结果卡（陈语桐）。
+6. 所有提案到齐后进入**三选一**：主角在自己窗口里 `@名字 问题`
+   和候选的 Agent 聊天，对方 Agent **只依据自己本人的画像**用真模型
+   （OpenAI 兼容接口，如 glm-5.2）回答——画像里没有的就说要问本人，
+   不能替本人答应见面；聊天不改变任何协商状态；
+7. 主角 `/choose 名字` 选定一位，其余婉拒 → 被选中的一方本人批准 →
+   生成唯一一份「见面提案」结果卡。自动模式默认选排名第一（陈语桐）。
+
+聊天是新增的两种 Agent 间消息 `CHAT` / `CHAT_REPLY`（`src/xagent/mvp/
+runtime.py`），回答由 `src/xagent/mvp/chat.py` 生成，与负责协商决策的
+policy 相互独立。候选画像（`profile.persona`）只写进候选**自己**的
+Agent 配置，不含硬条件事实（硬条件只走协商协议和本人确认）。
 
 ## 桥接设计（`scripts/run_combined.py` + `configs/mvp/dating-match.json`）
 
@@ -55,12 +64,28 @@ X-Agent 的完整故事是两幕，分别由仓库的两套代码承载，现在
 # 产出 .local/combined/<user>-<时间>/TRANSCRIPT.md + result.json
 ```
 
-一条命令两幕连演（适合录屏）：浏览器自动播放第一幕网页，终端里
-四个 Agent 界面分屏；讲完网页后在终端按 Enter 开始第二幕自动协商：
+聊天要用真模型。密钥存进 macOS 钥匙串一次（输入不回显、不落盘），
+之后由 `scripts/with_llm_env.sh` 在启动时读取；接口地址和模型默认
+`https://sem.ensureok.ai/v1` / `glm-5.2`，可用 `LLM_BASE_URL`、`LLM_MODEL` 覆盖：
 
 ```bash
-bash scripts/demo_tui.sh            # --delay 3 可放慢每一步
+security add-generic-password -a "$USER" -s x-agent-llm -w
+```
+
+一条命令两幕连演（适合录屏）：浏览器自动播放第一幕网页，终端里
+四个 Agent 界面分屏；讲完网页后在终端按 Enter 开始第二幕，到三选一时
+键盘自动切到阿哲的窗口，`@陈语桐 你周末一般怎么过？` 聊天，`/choose 陈语桐` 选定：
+
+```bash
+bash scripts/demo_tui.sh               # --delay 3 可放慢每一步
+bash scripts/demo_tui.sh --auto-chat   # 免手打：自动问两个预设问题后选第一名
 # 退出：Ctrl+B 再按 D，或 tmux kill-session -t xagent-demo
+```
+
+不开界面、带真模型聊天的自动全程：
+
+```bash
+bash scripts/with_llm_env.sh .venv/bin/python scripts/run_combined.py --auto-chat
 ```
 
 现场手动（TUI 四窗口，适合路演互动）：

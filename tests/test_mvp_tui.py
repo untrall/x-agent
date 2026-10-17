@@ -481,3 +481,128 @@ async def test_clarification_restores_original_words_for_retry():
         assert field.value == '可能二十小时'
         assert '需要补充' in str(app.query_one('#loop-error').content)
         assert app._draft_question_id == 'q1'
+
+
+def _choice_runtime():
+    runtime = RuntimeFixture()
+    runtime.config["peers"] = [{"agent_id": f"a{n}", "name": name}
+                               for n, name in ((2, "林小满"), (3, "陈语桐"), (4, "方糖"))]
+    runtime.state["questions"] = []
+    runtime.state["sessions"] = [
+        {"session_id": f"s{n}", "request_id": "r1", "peer_id": f"a{n}", "role": "requester",
+         "state": "PENDING_APPROVAL", "revision": 3, "requirements": [], "terms": {},
+         "proposal": {"digest": f"d{n}", "version": 1, "terms": {}}, "approvals": [],
+         "artifact": None, "pending_question_id": None}
+        for n in (2, 3, 4)]
+
+    async def chat(session_id, text):
+        runtime.calls.append(("chat", session_id, text))
+        return runtime.state
+
+    async def choose(session_id):
+        runtime.calls.append(("choose", session_id))
+        return runtime.state
+    runtime.chat, runtime.choose = chat, choose
+    return runtime
+
+
+async def _send(pilot, app, line):
+    field = app.query_one('#owner-input', Input)
+    await pilot.pause()
+    assert app.focused is field, f'focus lost before: {line}'
+    field.value = line
+    await pilot.press('enter')
+    await pilot.pause(0.3)
+
+
+@pytest.mark.asyncio
+async def test_dropdown_target_receives_plain_text_and_shortcuts_switch_it():
+    runtime = _choice_runtime()
+    app = AgentApp(runtime)
+    async with app.run_test(size=(120, 45)) as pilot:
+        await pilot.pause()
+        assert '3 选 1' in str(app.query_one('#loop-title').content)
+        assert app.query_one('#choice-bar').display and app.query_one('#chat-target', Select).value == 's2'
+        await _send(pilot, app, '周末怎么过？')            # default target: first candidate
+        await _send(pilot, app, '那平时呢？')              # same person again
+        await pilot.press('ctrl+down')
+        await pilot.pause()
+        assert app.query_one('#chat-target', Select).value == 's3'
+        await _send(pilot, app, '喜欢户外吗？')
+        assert runtime.calls == [("chat", "s2", "周末怎么过？"), ("chat", "s2", "那平时呢？"),
+                                 ("chat", "s3", "喜欢户外吗？")]
+        assert str(app.query_one('#choose-button', Button).label) == '选定 陈语桐'
+        await pilot.click('#choose-button')
+        await pilot.pause(0.3)
+        assert runtime.calls[-1] == ("choose", "s3")
+        assert not any(c[0] == "broadcast" for c in runtime.calls)
+
+
+@pytest.mark.asyncio
+async def test_at_name_tolerates_one_wrong_character_number_and_keeps_text_on_error():
+    runtime = _choice_runtime()
+    app = AgentApp(runtime)
+    async with app.run_test(size=(120, 45)) as pilot:
+        await _send(pilot, app, '@陈雨桐 周末怎么过？')      # IME homophone for 陈语桐
+        await _send(pilot, app, '@3 你好')                  # numbered: 3rd = 方糖
+        assert runtime.calls == [("chat", "s3", "周末怎么过？"), ("chat", "s4", "你好")]
+        await _send(pilot, app, '@王五 在吗')
+        assert app.query_one('#owner-input', Input).value == '@王五 在吗'
+        assert '没有待确认的候选「王五」' in str(app.query_one('#loop-error').content)
+
+
+@pytest.mark.asyncio
+async def test_choice_panel_shows_latest_chat_of_current_target_only():
+    runtime = _choice_runtime()
+    runtime.state["events"] = [
+        {"seq": 1, "type": "CHAT_SENT", "session_id": "s3", "peer_id": "a3", "summary": "周末怎么过？", "payload": {"chat_id": "c1"}},
+    ]
+    app = AgentApp(runtime)
+    async with app.run_test(size=(120, 45)) as pilot:
+        await pilot.pause()
+        assert "周末怎么过" not in str(app.query_one('#question-detail').content)   # target is 林小满
+        await pilot.press('ctrl+down')
+        await pilot.pause()
+        detail = str(app.query_one('#question-detail').content)
+        assert "你 → 陈语桐：周末怎么过？" in detail and "正在回答" in detail
+        assert not app.query_one('#selectors').display
+        runtime.state["events"].append({"seq": 2, "type": "CHAT_REPLY", "session_id": "s3", "peer_id": "a3",
+                                        "summary": "喜欢露营和跑步。", "payload": {"chat_id": "c1", "ok": True}})
+        await pilot.pause(0.4)
+        assert "陈语桐 的 Agent：喜欢露营和跑步。" in str(app.query_one('#question-detail').content)
+
+
+@pytest.mark.asyncio
+async def test_after_choosing_owner_waits_and_cannot_rechoose():
+    runtime = _choice_runtime()
+    runtime.state["sessions"][1]["approvals"] = ["a1"]        # chose 陈语桐, waiting
+    app = AgentApp(runtime)
+    async with app.run_test(size=(120, 45)) as pilot:
+        await pilot.pause()
+        assert '已选定 陈语桐' in str(app.query_one('#loop-title').content)
+        assert not app.query_one('#owner-input').display and not app.query_one('#choice-bar').display
+        assert not app.query_one('#approve-button').display
+
+
+@pytest.mark.asyncio
+async def test_candidate_is_asked_only_after_being_chosen():
+    runtime = RuntimeFixture()
+    runtime.state["questions"] = []
+    runtime.state["sessions"] = [
+        {"session_id": "p1", "request_id": "r1", "peer_id": "a2", "role": "provider", "state": "PENDING_APPROVAL",
+         "revision": 2, "requirements": [], "terms": {}, "proposal": {"digest": "dp", "version": 1, "terms": {}},
+         "approvals": [], "artifact": None, "pending_question_id": None}]
+    runtime.config["peers"] = [{"agent_id": "a2", "name": "阿哲"}]
+    app = AgentApp(runtime)
+    async with app.run_test(size=(120, 45)) as pilot:
+        await pilot.pause()
+        assert not app.query_one('#owner-panel').display
+        assert '等待对方选择' in str(app.query_one('#phase').content)
+        runtime.state["sessions"][0]["approvals"] = ["a2"]    # 阿哲 chose me
+        await pilot.pause(0.4)
+        assert '阿哲 选择了你 · 是否接受？' in str(app.query_one('#loop-title').content)
+        assert str(app.query_one('#approve-button', Button).label) == '接受'
+        assert str(app.query_one('#reject-button', Button).label) == '婉拒'
+        await pilot.click('#approve-button')
+        await pilot.pause(0.3)
+        assert runtime.calls == [("approve", "p1", True, "dp", 2)]

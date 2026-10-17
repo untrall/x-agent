@@ -55,6 +55,17 @@ def test_configs_withhold_kids_open_but_preload_hard_facts(tmp_path):
         assert "kids_open" in cfg["profile"]["public_fields"]
 
 
+def test_each_agent_gets_only_its_own_persona_without_hard_facts(tmp_path):
+    admin = admin_ranking("azhe", 3)
+    configs = build_configs(admin, tmp_path)
+    for cfg in configs:
+        persona = cfg["profile"]["persona"]
+        assert persona["name"] == cfg["name"]
+        assert "facts" not in persona  # hard facts go through the protocol only
+        assert persona["interests"] and persona["traits"]
+        assert "外向程度" in persona["traits"]
+
+
 def test_kids_open_derivation():
     assert kids_open({"facts": {"wants_kids": "open"}}) is True
     assert kids_open({"facts": {"wants_kids": "yes"}}) is True
